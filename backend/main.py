@@ -56,8 +56,13 @@ async def search(
 ):
     df = read_csv_from_github()
 
-    # Optional: debug output
-    print("DataFrame loaded:", df.head().to_dict(orient="records"))
+    print("🔍 Search Query:")
+    print("Customer Code:", customer_code)
+    print("Customer Name:", customer_name)
+    print("Attendee Name:", attendee_name)
+    print("Registration ID:", registration_id)
+    print("📄 DataFrame preview:")
+    print(df.head().to_dict(orient="records"))
 
     results = df[df.apply(lambda row:
         (customer_code.lower() in str(row.get("customer_code", "")).lower()) or
@@ -67,6 +72,7 @@ async def search(
         axis=1
     )]
 
+    print("✅ Results found:", len(results))
     return results.to_dict(orient="records")
 
 @app.post("/mark_attendance")
