@@ -4,56 +4,66 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from azure.storage.blob import BlobServiceClient, BlobClient
 import pandas as pd
-import io
 import os
+import io
 
 app = FastAPI()
 
-# Serve frontend
+# Mount static HTML pages
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 @app.get("/", response_class=FileResponse)
 async def root():
     return FileResponse("frontend/login.html")
 
-# CORS
+# CORS (update allowed_origins for production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with your actual frontend domain for security
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ENV vars for blob
-BLOB_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-CONTAINER_NAME = os.getenv["registration-data"]
+# --- Azure Blob Config ---
+STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
+STORAGE_ACCOUNT_KEY = os.getenv("STORAGE_ACCOUNT_KEY")
+CONTAINER_NAME = "registration-data"
 
-# Read blob as DataFrame
+BLOB_CONNECTION_STRING = (
+    f"DefaultEndpointsProtocol=https;"
+    f"AccountName={STORAGE_ACCOUNT_NAME};"
+    f"AccountKey={STORAGE_ACCOUNT_KEY};"
+    f"EndpointSuffix=core.windows.net"
+)
+
+# --- Blob Utility Functions ---
 def read_csv_blob(blob_name: str) -> pd.DataFrame:
-    blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
-    blob_client = blob_service_client.get_container_client(CONTAINER_NAME).get_blob_client(blob_name)
-    stream = blob_client.download_blob()
-    return pd.read_csv(io.BytesIO(stream.readall()))
+    blob_service = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
+    blob_client = blob_service.get_container_client(CONTAINER_NAME).get_blob_client(blob_name)
+    stream = blob_client.download_blob().readall()
+    return pd.read_csv(io.BytesIO(stream))
 
-# Append row to blob CSV
-def append_to_csv_blob(blob_name: str, new_row: dict):
-    df = pd.DataFrame([new_row])
+def append_to_blob_csv(blob_name: str, new_data: dict):
+    df_new = pd.DataFrame([new_data])
+    blob_service = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
+    container_client = blob_service.get_container_client(CONTAINER_NAME)
+    blob_client = container_client.get_blob_client(blob_name)
 
+    # Try to read existing blob or create new
     try:
-        existing_df = read_csv_blob(blob_name)
-        combined_df = pd.concat([existing_df, df], ignore_index=True)
+        existing_data = blob_client.download_blob().readall()
+        df_existing = pd.read_csv(io.BytesIO(existing_data))
+        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
     except:
-        combined_df = df  # File might not exist yet
+        df_combined = df_new
 
-    # Save back to blob
-    blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
-    blob_client = blob_service_client.get_container_client(CONTAINER_NAME).get_blob_client(blob_name)
-    output = io.StringIO()
-    combined_df.to_csv(output, index=False)
-    blob_client.upload_blob(output.getvalue(), overwrite=True)
+    out_buffer = io.BytesIO()
+    df_combined.to_csv(out_buffer, index=False)
+    out_buffer.seek(0)
+    blob_client.upload_blob(out_buffer, overwrite=True)
 
-# LOGIN
+# --- Login Endpoint ---
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
     expected_user = os.getenv("LOGIN_USERNAME", "fs2025")
@@ -62,7 +72,7 @@ async def login(username: str = Form(...), password: str = Form(...)):
         return JSONResponse({"success": True})
     return JSONResponse({"success": False}, status_code=401)
 
-# SEARCH Registered Guests
+# --- Search Registered Guests ---
 @app.post("/search")
 async def search(
     customer_code: str = Form(""),
@@ -73,33 +83,24 @@ async def search(
     df = read_csv_blob("registered.csv")
     match = df[
         df.apply(lambda row:
-            customer_code.lower() in str(row.get("customer_code", "")).lower() or
-            attendee_name.lower() in str(row.get("attendee_name", "")).lower() or
-            customer_name.lower() in str(row.get("customer_name", "")).lower() or
+            customer_code.lower() in str(row.get("customer_code", "")).lower() and
+            attendee_name.lower() in str(row.get("attendee_name", "")).lower() and
+            customer_name.lower() in str(row.get("customer_name", "")).lower() and
             registration_id.lower() in str(row.get("registration_id", "")).lower(),
-        axis=1)
+            axis=1
+        )
     ]
     return match.to_dict(orient="records")
 
-# MARK attendance (registered guests)
+# --- Log Attendance (Registered) ---
 @app.post("/mark_attendance")
 async def mark_attendance(data: dict):
-    append_to_csv_blob("attendance_log.csv", data)
-    append_to_csv_blob("booth_print_queue.csv", data)
-    return {"status": "Attendance Logged"}
+    append_to_blob_csv("booth_queue.csv", data)
+    return {"status": "Registered guest logged for badge print"}
 
-# REGISTER walk-in guest
+# --- Walk-in Submission ---
 @app.post("/walkin")
 async def register_walkin(data: dict):
-    append_to_csv_blob("walkins.csv", data)
-    append_to_csv_blob("booth_print_queue.csv", data)
-    return {"status": "Walk-in Registered"}
-
-# GET booth queue
-@app.get("/booth_queue")
-async def booth_queue():
-    try:
-        df = read_csv_blob("booth_print_queue.csv")
-        return df.to_dict(orient="records")
-    except:
-        return []
+    append_to_blob_csv("walkins.csv", data)
+    append_to_blob_csv("booth_queue.csv", data)
+    return {"status": "Walk-in guest logged and queued"}
