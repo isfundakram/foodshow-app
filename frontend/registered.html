@@ -51,13 +51,18 @@
       `).join('');
     }
 
-    function markAttendance(data) {
-      fetch('/mark_attendance', {
+function markAttendance(entry) {
+    fetch('/mark_attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(() => alert("Marked In Attendance and sent to booth!"));
-    }
+        body: JSON.stringify(entry)
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Attendance marked and sent to booth!");
+        loadBoothQueue();
+    });
+}
 
     function logout() {
       localStorage.removeItem("authenticated");
