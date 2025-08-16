@@ -2,8 +2,10 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from azure.storage.blob import BlobServiceClient, BlobClient
 import pandas as pd
 import os
+import io
 
 app = FastAPI()
 
@@ -23,7 +25,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATA_PATH = "./backend/data"
+# ENV Variables
+ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+ACCOUNT_KEY = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+CONTAINER_NAME = os.getenv("AZURE_CONTAINER_NAME", "csvdata")
+
+# Blob Client
+blob_service = BlobServiceClient(
+    f"https://{ACCOUNT_NAME}.blob.core.windows.net",
+    credential=ACCOUNT_KEY
+)
+
+def download_csv(blob_name: str) -> pd.DataFrame:
+    try:
+        blob_client = blob_service.get_blob_client(CONTAINER_NAME, blob_name)
+        stream = blob_client.download_blob().readall()
+        return pd.read_csv(io.BytesIO(stream), encoding="ISO-8859-1")
+    except:
+        return pd.DataFrame()
+
+def append_csv(blob_name: str, new_data: dict):
+    df_new = pd.DataFrame([new_data])
+    blob_client = blob_service.get_blob_client(CONTAINER_NAME, blob_name)
+
+    try:
+        existing_df = download_csv(blob_name)
+        df_combined = pd.concat([existing_df, df_new], ignore_index=True)
+    except:
+        df_combined = df_new
+
+    buffer = io.StringIO()
+    df_combined.to_csv(buffer, index=False)
+    blob_client.upload_blob(buffer.getvalue(), overwrite=True)
 
 # Login
 @app.post("/login")
@@ -34,45 +67,29 @@ async def login(username: str = Form(...), password: str = Form(...)):
         return JSONResponse({"success": True})
     return JSONResponse({"success": False}, status_code=401)
 
-# Load registered CSV
-def load_registered():
-    try:
-        return pd.read_csv(f"{DATA_PATH}/registered.csv", encoding="ISO-8859-1")
-    except:
-        return pd.DataFrame()
-
 # Search
 @app.post("/search")
-async def search(
-    account: str = Form(""),
-    first: str = Form(""),
-    last: str = Form(""),
-    company: str = Form(""),
-    regname: str = Form("")
-):
-    df = load_registered()
+async def search(account: str = Form(""), first: str = Form(""), last: str = Form(""),
+                 company: str = Form(""), regname: str = Form("")):
+    df = download_csv("registered.csv")
     match = df[
         df.apply(lambda row:
-            account.lower() in row["Customer Code"].lower() or
-            first.lower() in row["Attendee Name"].lower().split()[0] or
-            last.lower() in row["Attendee Name"].lower().split()[-1] or
-            company.lower() in row["Customer Name"].lower() or
-            regname.lower() in row["Attendee Name"].lower(), axis=1)
+            account.lower() in str(row.get("Customer Code", "")).lower() or
+            first.lower() in str(row.get("Attendee Name", "")).split()[0].lower() or
+            last.lower() in str(row.get("Attendee Name", "")).split()[-1].lower() or
+            company.lower() in str(row.get("Customer Name", "")).lower() or
+            regname.lower() in str(row.get("Attendee Name", "")).lower(), axis=1)
     ]
     return match.to_dict(orient="records")
 
 # Attendance log
 @app.post("/mark_attendance")
 async def mark_attendance(data: dict):
-    df = pd.DataFrame([data])
-    path = f"{DATA_PATH}/attendance_log.csv"
-    df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
+    append_csv("attendance_log.csv", data)
     return {"status": "Logged"}
 
 # Walk-in form
 @app.post("/walkin")
 async def register_walkin(data: dict):
-    df = pd.DataFrame([data])
-    path = f"{DATA_PATH}/walkins.csv"
-    df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
+    append_csv("walkins.csv", data)
     return {"status": "Walk-in Registered"}
