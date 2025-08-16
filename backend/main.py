@@ -29,15 +29,18 @@ app.add_middleware(
 GITHUB_CSV_URL = "https://github.com/isfundakram/foodshow-app/blob/main/backend/data/registered.csv"
 
 def read_csv_from_github():
+    url = "https://github.com/isfundakram/foodshow-app/blob/main/backend/data/registered.csv"  # replace with yours
     try:
-        response = requests.get(GITHUB_CSV_URL)
+        response = requests.get(url)
         response.raise_for_status()
-        df = pd.read_csv(BytesIO(response.content), encoding="ISO-8859-1")
+        content = response.content.decode("utf-8")  # decode before reading
+        df = pd.read_csv(BytesIO(content.encode()))
         df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
         return df
     except Exception as e:
-        print(f"Error loading CSV from GitHub: {e}")
+        print(f"❌ Error loading CSV from GitHub: {e}")
         return pd.DataFrame()
+
 
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
