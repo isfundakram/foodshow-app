@@ -1,33 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Food Show Login</title>
-  <style>
-    body { font-family: Arial; padding: 40px; text-align: center; background: #f9f9f9; }
-    input { padding: 10px; margin: 10px; width: 250px; }
-    button { padding: 10px 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Food Show Login</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <h2>Food Show Employee Login</h2>
-  <input id="username" placeholder="Username" />
-  <input id="password" placeholder="Password" type="password" />
-  <br>
-  <button onclick="login()">Login</button>
-  <p id="error" style="color: red;"></p>
+    <div class="container">
+        <h2>Food Show Login</h2>
+        <form id="loginForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required value="fs2025"><br><br>
 
-  <script>
-    function login() {
-      const user = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value.trim();
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required value="icbfs1095"><br><br>
 
-      if (user === "fs2025" && pass === "icbfs1095") {
-        localStorage.setItem("authenticated", "true");
-        window.location.href = "/static/index.html";
-      } else {
-        document.getElementById("error").textContent = "Invalid username or password.";
-      }
-    }
-  </script>
+            <button type="submit">Login</button>
+        </form>
+        <p id="errorMsg" style="color: red;"></p>
+    </div>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            const response = await fetch("/login", {
+                method: "POST",
+                body: formData
+            });
+
+            if (response.ok) {
+                window.location.href = "/static/registered.html";
+            } else {
+                document.getElementById("errorMsg").textContent = "Invalid credentials. Try again.";
+            }
+        });
+    </script>
 </body>
 </html>
