@@ -2,12 +2,15 @@ from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from azure.storage.blob import BlobServiceClient
 import pandas as pd
 import requests
 from io import BytesIO
 import os
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 # Serve static frontend
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
