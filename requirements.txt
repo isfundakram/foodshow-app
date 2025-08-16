@@ -1,8 +1,6 @@
-fastapi==0.111.0
-uvicorn[standard]==0.30.0
-jinja2==3.1.4
-python-multipart==0.0.9
-azure-storage-blob==12.21.0
-azure-core==1.30.2
-python-dotenv==1.0.1
-gunicorn==21.2.0
+fastapi
+uvicorn
+gunicorn
+azure-storage-blob
+pandas
+jinja2
