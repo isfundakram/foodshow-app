@@ -12,16 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Validate build (install deps)
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+      # Zip the repo so app.py is at the root of the zip
       - name: Package site
         run: |
           zip -r app.zip . -x ".git/*" ".github/*"
@@ -29,6 +20,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: foodshow2025-app
+          app-name: foodshow2025-app              # must match your App Service name
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: app.zip
