@@ -1,6 +1,3 @@
-fastapi
-uvicorn
-pandas
+flask
 azure-storage-blob
-jinja2
-python-multipart
+pandas
