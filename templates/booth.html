@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+  <h2>Booth / Print Queue</h2>
+  <div class="hint">This auto-refreshes every 3 seconds.</div>
+  <table id="queue_table">
+    <thead>
+      <tr>
+        <th>customer_code</th>
+        <th>customer_name</th>
+        <th>attendee_name</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="/static/js/booth.js"></script>
+{% endblock %}

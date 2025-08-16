@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block content %}
+  <h2>Walk‑In Registration</h2>
+  <form id="walkin_form">
+    <label>Type</label>
+    <select name="walkin_type" required>
+      <option value="customer">customer</option>
+      <option value="vendor">vendor</option>
+      <option value="family/friend">family/friend</option>
+    </select>
+
+    <label>customer_code (if applicable)</label>
+    <input name="customer_code" />
+
+    <label>customer_name</label>
+    <input name="customer_name" required />
+
+    <label>attendee_name</label>
+    <input name="attendee_name" required />
+
+    <label>email</label>
+    <input type="email" name="email" />
+
+    <label>phone#</label>
+    <input name="phone" />
+
+    <label>how_did_you_hear_about_us</label>
+    <input name="how_heard" />
+
+    <button type="submit">Submit & Queue Badge</button>
+  </form>
+
+  <h3>Walk‑In Log (this session)</h3>
+  <table id="walkin_table">
+    <thead>
+    <tr><th>Type</th><th>customer_name</th><th>attendee_name</th><th>Print</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="/static/js/walkin.js"></script>
+{% endblock %}

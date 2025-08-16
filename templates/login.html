@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login — Foodshow Queue</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <h1>Foodshow Login</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="post" action="/login">
+      <label>Username</label>
+      <input type="text" name="username" required />
+      <label>Password</label>
+      <input type="password" name="password" required />
+      <button type="submit">Sign in</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% block content %}
+  <h2>Registered Attendees</h2>
+  <div class="filters">
+    <input id="f_customer_code" placeholder="Filter: customer_code" />
+    <input id="f_customer_name" placeholder="Filter: customer_name" />
+    <input id="f_attendee_name" placeholder="Filter: attendee_name" />
+    <input id="f_registration_id" placeholder="Filter: registration_id" />
+    <button id="clear_filters">Clear</button>
+  </div>
+
+  <table id="reg_table">
+    <thead>
+      <tr>
+        <th>customer_code</th>
+        <th>customer_name</th>
+        <th>attendee_name</th>
+        <th>registration_id</th>
+        <th>Here</th>
+        <th>Print</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="/static/js/registered.js"></script>
+{% endblock %}
