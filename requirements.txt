@@ -3,3 +3,5 @@ uvicorn
 azure-storage-blob
 python-multipart
 pandas
+jinja2
+aiofiles 
