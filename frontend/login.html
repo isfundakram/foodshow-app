@@ -1,41 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Food Show Login</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="utf-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; padding:2rem; }
+    .card { max-width:420px; margin:10vh auto; padding:1.5rem; border:1px solid #ddd; border-radius:12px; }
+    label { display:block; margin-top:.75rem; font-weight:600; }
+    input { width:100%; padding:.6rem .75rem; margin-top:.25rem; border:1px solid #ccc; border-radius:8px; }
+    button { width:100%; margin-top:1rem; padding:.75rem; border:0; border-radius:10px; background:#111; color:white; font-weight:700; cursor:pointer; }
+    .error { color:#b00020; min-height:1.2rem; margin-top:.5rem; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Food Show Login</h2>
-        <form id="loginForm">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required value="fs2025"><br><br>
+  <div class="card">
+    <h2>Staff Login</h2>
+    <form id="loginForm">
+      <label>Username <input id="u" autocomplete="username" /></label>
+      <label>Password <input id="p" type="password" autocomplete="current-password" /></label>
+      <button type="submit">Sign in</button>
+      <div id="err" class="error"></div>
+    </form>
+  </div>
 
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required value="icbfs1095"><br><br>
+  <script>
+    const err = document.getElementById('err');
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = document.getElementById('u').value.trim();
+      const p = document.getElementById('p').value;
 
-            <button type="submit">Login</button>
-        </form>
-        <p id="errorMsg" style="color: red;"></p>
-    </div>
-
-    <script>
-        document.getElementById("loginForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-
-            const response = await fetch("/login", {
-                method: "POST",
-                body: formData
-            });
-
-            if (response.ok) {
-                window.location.href = "/static/registered.html";
-            } else {
-                document.getElementById("errorMsg").textContent = "Invalid credentials. Try again.";
-            }
-        });
-    </script>
+      // Try one authenticated call to validate creds
+      const auth = 'Basic ' + btoa(u + ':' + p);
+      const res = await fetch('/api/registered/list', { headers: { Authorization: auth } });
+      if (!res.ok) {
+        err.textContent = 'Invalid username or password.';
+        return;
+      }
+      // store creds for this tab/session only
+      sessionStorage.setItem('auth', auth);
+      window.location.href = 'registered.html';
+    });
+  </script>
 </body>
 </html>
