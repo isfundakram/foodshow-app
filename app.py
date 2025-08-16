@@ -176,17 +176,27 @@ def booth_page(request: Request, _: None = Depends(require_login)):
 def api_registered(_: None = Depends(require_login)):
     try:
         reg_rows = read_csv_dicts(REGISTERED_BLOB)
-        att_rows = read_csv_dicts(ATTENDANCE_BLOB)
+
+        # ATTENDANCE may be empty or missing – treat as zero rows
+        try:
+            att_rows = read_csv_dicts(ATTENDANCE_BLOB)
+        except ResourceNotFoundError:
+            att_rows = []
+
         here_ids = {(a.get("registration_id") or "") for a in att_rows}
+
+        # Flag "here" for each registered row (default false)
         for r in reg_rows:
-            rid = (r.get("registration_id") or "")
+            rid = (r.get("registration_id") or "").strip()
             r["here"] = "true" if rid in here_ids else "false"
+
         return {"items": reg_rows}
+
+    # TEMP: show the exact failure until we confirm it's working
     except Exception as e:
-        # Temporary visibility to help diagnose; remove once everything works.
         return JSONResponse(status_code=500, content={
             "error": type(e).__name__,
-            "message": str(e)
+            "message": str(e),
         })
 
 
