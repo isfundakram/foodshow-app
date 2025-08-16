@@ -1,104 +1,113 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Registered Guests</title>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    input {
-      margin: 5px;
-      padding: 8px;
-      width: 250px;
-    }
-    button {
-      padding: 8px 16px;
-      margin: 10px 0;
-      cursor: pointer;
-    }
-    table {
-      margin-top: 20px;
-      border-collapse: collapse;
-      width: 100%;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-    .submit-btn {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-    }
-  </style>
+    <title>Search Registered Guests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+        }
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background: #f2f2f2;
+        }
+        .print-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 6px 12px;
+        }
+    </style>
 </head>
 <body>
-  <h2>Search Registered Guest</h2>
+    <h1>Search Registered Guests</h1>
+    <form id="searchForm">
+        <input type="text" name="customer_code" placeholder="Customer Code">
+        <input type="text" name="attendee_name" placeholder="Attendee Name">
+        <input type="text" name="customer_name" placeholder="Customer Name">
+        <input type="text" name="registration_id" placeholder="Registration ID">
+        <button type="submit">Search</button>
+    </form>
 
-  <form id="searchForm">
-    <input type="text" name="customer_code" placeholder="Customer Code">
-    <input type="text" name="customer_name" placeholder="Customer Name">
-    <input type="text" name="attendee_name" placeholder="Attendee Name">
-    <input type="text" name="registration_id" placeholder="Registration ID">
-    <br>
-    <button type="submit">Search</button>
-  </form>
+    <table id="resultsTable" style="display:none;">
+        <thead>
+            <tr>
+                <th>Customer Code</th>
+                <th>Customer Name</th>
+                <th>Attendee Name</th>
+                <th>Registration ID</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
-  <div id="results"></div>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-  <script>
-    document.getElementById('searchForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const response = await fetch('/search', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await response.json();
+            const formData = new FormData(e.target);
+            const response = await fetch('/search', {
+                method: 'POST',
+                body: formData
+            });
 
-      const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '';
+            const table = document.getElementById('resultsTable');
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = "";
 
-      if (data.length === 0) {
-        resultsDiv.innerHTML = '<p>No results found.</p>';
-        return;
-      }
+            if (response.ok) {
+                const results = await response.json();
+                if (results.length > 0) {
+                    results.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.customer_code}</td>
+                            <td>${row.customer_name}</td>
+                            <td>${row.attendee_name}</td>
+                            <td>${row.registration_id}</td>
+                            <td><button class="print-button" onclick='sendToBooth(${JSON.stringify(row)})'>Send to Booth</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    table.style.display = 'table';
+                } else {
+                    alert("No results found.");
+                    table.style.display = 'none';
+                }
+            } else {
+                alert("Search failed.");
+            }
+        });
 
-      let table = '<table><tr><th>Customer Code</th><th>Customer Name</th><th>Attendee Name</th><th>Registration ID</th><th>Action</th></tr>';
-      data.forEach((row, index) => {
-        table += `<tr>
-          <td>${row["customer_code"]}</td>
-          <td>${row["customer_name"]}</td>
-          <td>${row["attendee_name"]}</td>
-          <td>${row["registration_id"]}</td>
-          <td><button class="submit-btn" onclick="submitAttendance(${index})">Submit</button></td>
-        </tr>`;
-      });
-      table += '</table>';
-      resultsDiv.innerHTML = table;
+        async function sendToBooth(row) {
+            const response = await fetch('/booth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(row)
+            });
 
-      window.foundData = data;
-    });
-
-    async function submitAttendance(index) {
-      const entry = window.foundData[index];
-      await fetch('/mark_attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry)
-      });
-
-      await fetch('/booth_add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: entry["attendee_name"] })
-      });
-
-      alert("Submitted and added to booth print queue.");
-    }
-  </script>
+            if (response.ok) {
+                alert("Sent to Booth!");
+            } else {
+                alert("Failed to send to booth.");
+            }
+        }
+    </script>
 </body>
 </html>
