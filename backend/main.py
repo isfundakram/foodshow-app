@@ -58,8 +58,8 @@ def append_to_csv_blob(blob_name, new_data: dict):
 # Login endpoint
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
-    expected_user = os.getenv("LOGIN_USERNAME", "fs2025")
-    expected_pass = os.getenv("LOGIN_PASSWORD", "icbfs1095")
+    expected_user = os.getenv["LOGIN_USERNAME"]
+    expected_pass = os.getenv["LOGIN_PASSWORD"]
     if username == expected_user and password == expected_pass:
         return JSONResponse({"success": True})
     return JSONResponse({"success": False}, status_code=401)
@@ -67,21 +67,20 @@ async def login(username: str = Form(...), password: str = Form(...)):
 # Search registered guests
 @app.post("/search")
 async def search(
-    account: str = Form(""),
-    first: str = Form(""),
-    last: str = Form(""),
-    company: str = Form(""),
-    regname: str = Form("")
+    customer_code: str = Form(""),
+    attendee_name: str = Form(""),
+    customer_name: str = Form(""),
+    registration_id: str = Form("")
 ):
     df = read_csv_blob("registered.csv")
     match = df[
         df.apply(lambda row:
-            account.lower() in str(row.get("Customer Code", "")).lower() or
-            first.lower() in str(row.get("Attendee Name", "")).lower() or
-            last.lower() in str(row.get("Attendee Name", "")).lower() or
-            company.lower() in str(row.get("Customer Name", "")).lower() or
-            regname.lower() in str(row.get("Registration ID", "")).lower(), axis=1)
-    ]
+        (customer_code.lower() in str(row.get("customer_code", "")).lower()) or
+        (attendee_name.lower() in str(row.get("attendee_name", "")).lower()) or
+        (customer_name.lower() in str(row.get("customer_name", "")).lower()) or
+        (registration_id.lower() in str(row.get("registration_id", "")).lower()),
+        axis=1
+    )]
     return match.to_dict(orient="records")
 
 # Mark registered as attended
