@@ -5,9 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from azure.storage.blob import BlobServiceClient
 import pandas as pd
 import os
-from io import StringIO, BytesIO
-import uuid
-import json
+from io import BytesIO
 
 app = FastAPI()
 
@@ -18,7 +16,7 @@ app.mount("/static", StaticFiles(directory="frontend"), name="static")
 async def root():
     return FileResponse("frontend/login.html")
 
-# CORS (adjust origins if needed)
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,6 +35,7 @@ def read_csv_from_blob(blob_name):
         blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
         stream = blob_client.download_blob()
         df = pd.read_csv(BytesIO(stream.readall()), encoding="ISO-8859-1")
+        df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
         return df
     except Exception as e:
         print(f"Error reading {blob_name}: {e}")
@@ -63,26 +62,26 @@ async def login(username: str = Form(...), password: str = Form(...)):
         return JSONResponse({"success": True})
     return JSONResponse({"success": False}, status_code=401)
 
-# Search registered guests (partial match)
+# Search (uses updated snake_case column names)
 @app.post("/search")
 async def search(
-    account: str = Form(""),
-    first: str = Form(""),
-    last: str = Form(""),
-    company: str = Form(""),
-    regname: str = Form("")
+    customer_code: str = Form(""),
+    attendee_name: str = Form(""),
+    customer_name: str = Form(""),
+    registration_id: str = Form("")
 ):
     df = read_csv_from_blob("registered.csv")
+
     results = df[df.apply(lambda row:
-        (account.lower() in str(row.get("Customer Code", "")).lower()) or
-        (first.lower() in str(row.get("Attendee Name", "")).split()[0].lower()) or
-        (company.lower() in str(row.get("Customer Name", "")).lower()) or
-        (regname.lower() in str(row.get("Registration ID", "")).lower()),
+        (customer_code.lower() in str(row.get("customer_code", "")).lower()) or
+        (attendee_name.lower() in str(row.get("attendee_name", "")).lower()) or
+        (customer_name.lower() in str(row.get("customer_name", "")).lower()) or
+        (registration_id.lower() in str(row.get("registration_id", "")).lower()),
         axis=1
     )]
+
     return results.to_dict(orient="records")
 
-# Mark attendance and add to booth queue
 @app.post("/mark_attendance")
 async def mark_attendance(data: dict):
     df = pd.DataFrame([data])
@@ -90,7 +89,6 @@ async def mark_attendance(data: dict):
     append_to_blob_csv("booth_queue.csv", df)
     return {"status": "Logged & Queued"}
 
-# Register walk-in and add to booth queue
 @app.post("/walkin")
 async def register_walkin(data: dict):
     df = pd.DataFrame([data])
@@ -98,7 +96,6 @@ async def register_walkin(data: dict):
     append_to_blob_csv("booth_queue.csv", df)
     return {"status": "Walk-in Registered & Queued"}
 
-# Return booth queue
 @app.get("/booth_queue")
 async def get_booth_queue():
     df = read_csv_from_blob("booth_queue.csv")
