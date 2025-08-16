@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search Registered Guest</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input { display: block; margin: 10px; padding: 8px; width: 300px; }
+    button { padding: 10px 20px; margin: 10px 0; }
+    #results { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("authenticated") !== "true") {
+      window.location.href = "/static/login.html";
+    }
+  </script>
+
+  <h2>Search Registered Guest</h2>
+  <form id="searchForm">
+    <input name="account" placeholder="Customer Acct #" />
+    <input name="first" placeholder="First Name" />
+    <input name="last" placeholder="Last Name" />
+    <input name="company" placeholder="Company Name" />
+    <input name="regname" placeholder="Registration Name" />
+    <button type="submit">Search</button>
+  </form>
+
+  <div id="results"></div>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const form = document.getElementById('searchForm');
+    const resultsDiv = document.getElementById('results');
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const res = await fetch('/search', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      resultsDiv.innerHTML = data.map(d => `
+        <div style="border:1px solid #ccc;padding:10px;margin:10px;">
+          <b>${d['Attendee Name']}</b> - ${d['Customer Name']}<br>
+          ${d['Customer Code']}<br>
+          <button onclick='markAttendance(${JSON.stringify(d)})'>Mark In Attendance - Pick Up Badge</button>
+        </div>
+      `).join('');
+    }
+
+    function markAttendance(data) {
+      fetch('/mark_attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => alert("Marked In Attendance and sent to booth!"));
+    }
+
+    function logout() {
+      localStorage.removeItem("authenticated");
+      window.location.href = "/static/login.html";
+    }
+  </script>
+</body>
+</html>

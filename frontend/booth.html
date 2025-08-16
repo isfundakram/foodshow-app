@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Booth - Print Queue</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .entry { border:1px solid #ccc; padding: 10px; margin: 10px; }
+  </style>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("authenticated") !== "true") {
+      window.location.href = "/static/login.html";
+    }
+  </script>
+
+  <h2>Booth Print Queue</h2>
+  <div id="queue"></div>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    async function loadQueue() {
+      const res = await fetch('/static/data/attendance_log.csv');
+      const text = await res.text();
+      const lines = text.trim().split('\n').slice(1); // skip header
+      const html = lines.map(line => {
+        const [code, name] = line.split(',');
+        return `<div class="entry">
+          <b>${name}</b> - ${code}<br>
+          <button onclick="printBadge('${name}', '${code}')">Print Badge</button>
+        </div>`;
+      }).join('');
+      document.getElementById('queue').innerHTML = html;
+    }
+
+    function printBadge(name, company) {
+      window.open(`/badge?name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}`, '_blank');
+    }
+
+    function logout() {
+      localStorage.removeItem("authenticated");
+      window.location.href = "/static/login.html";
+    }
+
+    setInterval(loadQueue, 5000); // refresh every 5 sec
+    loadQueue();
+  </script>
+</body>
+</html>

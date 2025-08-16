@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Food Show Check-In</title>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 50px; background: #f4f4f4; }
+    h1 { margin-bottom: 30px; }
+    .button {
+      display: inline-block; padding: 20px 40px; margin: 20px;
+      font-size: 20px; background: #4285F4; color: white;
+      border: none; border-radius: 10px; text-decoration: none;
+    }
+    .button:hover { background: #2a65c9; }
+  </style>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("authenticated") !== "true") {
+      window.location.href = "/static/login.html";
+    }
+  </script>
+
+  <h1>Food Show 2025 - Check-In Portal</h1>
+
+  <a href="/static/registered.html" class="button">Registered Guests</a>
+  <a href="/static/walkin.html" class="button">Walk-In Registration</a>
+  <a href="/static/booth.html" class="button">Booth - Print Queue</a>
+
+  <br><br>
+  <button onclick="logout()">Logout</button>
+  <script>
+    function logout() {
+      localStorage.removeItem("authenticated");
+      window.location.href = "/static/login.html";
+    }
+  </script>
+</body>
+</html>
