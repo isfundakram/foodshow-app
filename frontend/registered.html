@@ -1,104 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Registered Guests</title>
+  <title>Search Registered Guests</title>
   <meta charset="UTF-8">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    input {
-      margin: 5px;
-      padding: 8px;
-      width: 250px;
-    }
-    button {
-      padding: 8px 16px;
-      margin: 10px 0;
-      cursor: pointer;
-    }
-    table {
-      margin-top: 20px;
-      border-collapse: collapse;
-      width: 100%;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-    .submit-btn {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input { padding: 8px; width: 300px; }
+    button { padding: 8px 16px; }
+    table { margin-top: 20px; border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
   </style>
 </head>
 <body>
-  <h2>Search Registered Guest</h2>
+  <h2>Search Registered Guests</h2>
 
-  <form id="searchForm">
-    <input type="text" name="customer_code" placeholder="Customer Code">
-    <input type="text" name="customer_name" placeholder="Customer Name">
-    <input type="text" name="attendee_name" placeholder="Attendee Name">
-    <input type="text" name="registration_id" placeholder="Registration ID">
-    <br>
+  <form method="get" action="/">
+    <input type="text" name="query" placeholder="Search by any field..." value="{{ query }}">
     <button type="submit">Search</button>
   </form>
 
-  <div id="results"></div>
-
-  <script>
-    document.getElementById('searchForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const response = await fetch('/search', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await response.json();
-
-      const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '';
-
-      if (data.length === 0) {
-        resultsDiv.innerHTML = '<p>No results found.</p>';
-        return;
-      }
-
-      let table = '<table><tr><th>Customer Code</th><th>Customer Name</th><th>Attendee Name</th><th>Registration ID</th><th>Action</th></tr>';
-      data.forEach((row, index) => {
-        table += `<tr>
-          <td>${row["customer_code"]}</td>
-          <td>${row["customer_name"]}</td>
-          <td>${row["attendee_name"]}</td>
-          <td>${row["registration_id"]}</td>
-          <td><button class="submit-btn" onclick="submitAttendance(${index})">Submit</button></td>
-        </tr>`;
-      });
-      table += '</table>';
-      resultsDiv.innerHTML = table;
-
-      window.foundData = data;
-    });
-
-    async function submitAttendance(index) {
-      const entry = window.foundData[index];
-      await fetch('/mark_attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry)
-      });
-
-      await fetch('/booth_add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: entry["attendee_name"] })
-      });
-
-      alert("Submitted and added to booth print queue.");
-    }
-  </script>
+  {% if results %}
+    <table>
+      <thead>
+        <tr>
+          <th>Customer Code</th>
+          <th>Customer Name</th>
+          <th>Attendee Name</th>
+          <th>Registration ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in results %}
+        <tr>
+          <td>{{ row['Customer Code'] }}</td>
+          <td>{{ row['Customer Name'] }}</td>
+          <td>{{ row['Attendee Name'] }}</td>
+          <td>{{ row['Registration ID'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% elif query %}
+    <p>No results found for: <strong>{{ query }}</strong></p>
+  {% endif %}
 </body>
 </html>
