@@ -22,8 +22,8 @@ ATTENDANCE_BLOB = os.getenv("ATTENDANCE_BLOB", "attendance.csv")
 WALKINS_BLOB = os.getenv("WALKINS_BLOB", "walkins.csv")
 QUEUE_BLOB = os.getenv("QUEUE_BLOB", "print_queue.csv")
 
-LOGIN_USERNAME = os.getenv("LOGIN_USERNAME", "fs2025")
-LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "icbfs1095")
+LOGIN_USERNAME = os.getenv["LOGIN_USERNAME"]
+LOGIN_PASSWORD = os.getenv["LOGIN_PASSWORD"]
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-secret-change-me")
 
