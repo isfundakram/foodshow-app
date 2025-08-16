@@ -48,24 +48,23 @@ def load_registered():
 @app.post("/search")
 async def search(
     account: str = Form(""),
-    first: str = Form(""),
-    last: str = Form(""),
     company: str = Form(""),
-    regname: str = Form("")
+    regname: str = Form(""),
+    attendee: str = Form("")
 ):
     df = load_registered()
 
     def match_row(row):
         return (
             account.lower() in str(row["Customer Code"]).lower()
-            or first.lower() in str(row["Attendee Name"]).lower()
-            or last.lower() in str(row["Attendee Name"]).lower()
             or company.lower() in str(row["Customer Name"]).lower()
             or regname.lower() in str(row["Registration ID"]).lower()
+            or attendee.lower() in str(row["Attendee Name"]).lower()
         )
 
-    match = df[df.apply(match_row, axis=1)]
-    return match.to_dict(orient="records")
+    matched = df[df.apply(match_row, axis=1)]
+    return matched.to_dict(orient="records")
+
 
 # --- LOG ATTENDANCE ---
 @app.post("/mark_attendance")
