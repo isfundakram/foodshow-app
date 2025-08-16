@@ -1,3 +1,17 @@
-flask
-azure-storage-blob
+# Core ASGI server
+uvicorn[standard]
+
+# Production process manager
+gunicorn
+
+# Web framework
+fastapi
+
+# Data handling
 pandas
+
+# Azure Blob Storage SDK
+azure-storage-blob
+
+# Optional: form parsing (used by FastAPI if you add file uploads/forms later)
+python-multipart
