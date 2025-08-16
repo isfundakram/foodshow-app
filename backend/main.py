@@ -2,102 +2,104 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from azure.storage.blob import BlobServiceClient
 import pandas as pd
+from io import BytesIO
 import os
 
 app = FastAPI()
 
-# Serve static frontend files
+# Serve frontend
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 @app.get("/", response_class=FileResponse)
 async def root():
     return FileResponse("frontend/login.html")
 
-# Enable CORS (for frontend access)
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with domain in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Path to data directory
-DATA_PATH = "./backend/data"
+# Azure Blob setup
+AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+CONTAINER_NAME = "foodshowdata"
+blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
+container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
-# In-memory queue for booth badge printing
-booth_queue = []
+def read_csv_blob(blob_name):
+    try:
+        blob_client = container_client.get_blob_client(blob_name)
+        download = blob_client.download_blob()
+        return pd.read_csv(BytesIO(download.readall()))
+    except Exception as e:
+        print(f"Error reading {blob_name}:", e)
+        return pd.DataFrame()
 
-# --- LOGIN ---
+def append_to_csv_blob(blob_name, new_data: dict):
+    df_new = pd.DataFrame([new_data])
+    try:
+        df_existing = read_csv_blob(blob_name)
+        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+
+        buffer = BytesIO()
+        df_combined.to_csv(buffer, index=False)
+        buffer.seek(0)
+
+        blob_client = container_client.get_blob_client(blob_name)
+        blob_client.upload_blob(buffer, overwrite=True)
+    except Exception as e:
+        print(f"Error writing to {blob_name}:", e)
+
+# Login endpoint
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
-    expected_user = os.getenv("LOGIN_USERNAME", "fs2025")
-    expected_pass = os.getenv("LOGIN_PASSWORD", "icbfs1095")
+    expected_user = os.getenv("LOGIN_USERNAME")
+    expected_pass = os.getenv("LOGIN_PASSWORD")
     if username == expected_user and password == expected_pass:
         return JSONResponse({"success": True})
     return JSONResponse({"success": False}, status_code=401)
 
-# --- REGISTERED SEARCH ---
-def load_registered():
-    try:
-        return pd.read_csv(f"{DATA_PATH}/registered.csv", encoding="ISO-8859-1")
-    except:
-        return pd.DataFrame()
-
+# Search registered guests
 @app.post("/search")
 async def search(
     account: str = Form(""),
+    first: str = Form(""),
+    last: str = Form(""),
     company: str = Form(""),
-    regname: str = Form(""),
-    attendee: str = Form("")
+    regname: str = Form("")
 ):
-    df = load_registered()
+    df = read_csv_blob("registered.csv")
+    match = df[
+        df.apply(lambda row:
+            account.lower() in str(row.get("Customer Code", "")).lower() or
+            first.lower() in str(row.get("Attendee Name", "")).lower() or
+            last.lower() in str(row.get("Attendee Name", "")).lower() or
+            company.lower() in str(row.get("Customer Name", "")).lower() or
+            regname.lower() in str(row.get("Registration ID", "")).lower(), axis=1)
+    ]
+    return match.to_dict(orient="records")
 
-    def match_row(row):
-        return (
-            account.lower() in str(row["Customer Code"]).lower()
-            or company.lower() in str(row["Customer Name"]).lower()
-            or regname.lower() in str(row["Registration ID"]).lower()
-            or attendee.lower() in str(row["Attendee Name"]).lower()
-        )
-
-    matched = df[df.apply(match_row, axis=1)]
-    return matched.to_dict(orient="records")
-
-
-# --- LOG ATTENDANCE ---
+# Mark registered as attended
 @app.post("/mark_attendance")
 async def mark_attendance(data: dict):
-    df = pd.DataFrame([data])
-    path = f"{DATA_PATH}/attendance_log.csv"
-    df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
+    append_to_csv_blob("attendance_log.csv", data)
+    append_to_csv_blob("booth_queue.csv", {"name": data.get("Attendee Name", "")})
     return {"status": "Logged"}
 
-# --- WALK-IN REGISTRATION ---
+# Handle walk-ins
 @app.post("/walkin")
 async def register_walkin(data: dict):
-    df = pd.DataFrame([data])
-    path = f"{DATA_PATH}/walkins.csv"
-    df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
-
-    # Also send to booth
-    booth_queue.append({"name": data.get("first_name", "") + " " + data.get("last_name", "")})
+    append_to_csv_blob("walkins.csv", data)
+    append_to_csv_blob("booth_queue.csv", {"name": data.get("Attendee Name", "")})
     return {"status": "Walk-in Registered"}
 
-# --- BOOTH QUEUE ---
-@app.post("/booth_queue")
-async def booth_queue_add(data: dict):
-    booth_queue.append(data)
-    return {"status": "added"}
-
-@app.get("/booth_queue")
-async def booth_queue_get():
-    return booth_queue
-
-@app.post("/booth_queue/remove")
-async def booth_queue_remove(data: dict):
-    name = data.get("name")
-    global booth_queue
-    booth_queue = [entry for entry in booth_queue if entry.get("name") != name]
-    return {"status": "removed"}
+# Serve booth queue
+@app.get("/queue")
+async def booth_queue():
+    df = read_csv_blob("booth_queue.csv")
+    return df.to_dict(orient="records")
