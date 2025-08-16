@@ -1,5 +1,5 @@
 fastapi
 uvicorn
-pandas
+azure-storage-blob
 python-multipart
-aiofiles
+pandas
