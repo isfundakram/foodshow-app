@@ -55,14 +55,14 @@ async def search(
 ):
     df = load_registered()
 
-def match_row(row):
-    return (
-        account.lower() in str(row["Customer Code"]).lower()
-        or first.lower() in str(row["Attendee Name"]).lower()
-        or last.lower() in str(row["Attendee Name"]).lower()
-        or company.lower() in str(row["Customer Name"]).lower()
-        or regname.lower() in str(row["Registration ID"]).lower()
-    )
+    def match_row(row):
+        return (
+            account.lower() in str(row["Customer Code"]).lower()
+            or first.lower() in str(row["Attendee Name"]).lower()
+            or last.lower() in str(row["Attendee Name"]).lower()
+            or company.lower() in str(row["Customer Name"]).lower()
+            or regname.lower() in str(row["Registration ID"]).lower()
+        )
 
     match = df[df.apply(match_row, axis=1)]
     return match.to_dict(orient="records")
