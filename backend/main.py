@@ -15,34 +15,43 @@ templates = Jinja2Templates(directory="templates")
 # Serve static frontend
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-@app.get("/", response_class=FileResponse)
-async def root():
-    return FileResponse("frontend/login.html")
+AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "Your_Connection_String_Here")
+CONTAINER_NAME = "registration-data"
+BLOB_NAME = "registered.csv"
 
-# CORS setup
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def read_csv_from_blob():
+    blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
+    blob_client = blob_service_client.get_container_client(CONTAINER_NAME).get_blob_client(BLOB_NAME)
 
-# Replace this with your actual GitHub RAW CSV URL
-GITHUB_CSV_URL = "https://github.com/isfundakram/foodshow-app/blob/main/backend/data/registered.csv"
+    blob_data = blob_client.download_blob()
+    content = blob_data.readall().decode('utf-8')
 
-def read_csv_from_github():
-    url = "https://github.com/isfundakram/foodshow-app/blob/main/backend/data/registered.csv"  # replace with yours
+    df = pd.read_csv(StringIO(content), dtype=str).fillna("")
+    return df
+
+@app.get("/", response_class=HTMLResponse)
+def search_form(request: Request, query: str = ""):
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        content = response.content.decode("utf-8")  # decode before reading
-        df = pd.read_csv(BytesIO(content.encode()))
-        df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
-        return df
+        df = read_csv_from_blob()
     except Exception as e:
-        print(f"❌ Error loading CSV from GitHub: {e}")
-        return pd.DataFrame()
+        return HTMLResponse(f"<h2>Error loading CSV: {e}</h2>")
+
+    if query:
+        query = query.lower()
+        results = df[
+            df.apply(lambda row: query in row['Customer Code'].lower() 
+                               or query in row['Customer Name'].lower() 
+                               or query in row['Attendee Name'].lower() 
+                               or query in row['Registration ID'].lower(), axis=1)
+        ]
+    else:
+        results = pd.DataFrame()
+
+    return templates.TemplateResponse("registered.html", {
+        "request": request,
+        "results": results.to_dict(orient="records"),
+        "query": query
+    })
 
 
 @app.post("/login")
