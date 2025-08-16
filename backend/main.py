@@ -55,3 +55,15 @@ async def search_registered(
         return JSONResponse(filtered.to_dict(orient="records"))
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+#login
+@app.post("/login")
+async def login(username: str = Form(...), password: str = Form(...)):
+    expected_user = os.getenv("LOGIN_USERNAME", "fs2025")
+    expected_pass = os.getenv("LOGIN_PASSWORD", "icbfs1095")
+    
+    if username == expected_user and password == expected_pass:
+        return JSONResponse({"success": True})
+    return JSONResponse({"success": False}, status_code=401)
+
+
