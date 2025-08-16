@@ -27,8 +27,8 @@ AZURE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")
 CONTAINER_NAME = os.getenv("REG_CONTAINER", "registration-data")
 REGISTERED_BLOB = os.getenv("REGISTERED_BLOB", "registered.csv")
 
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "staff")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+ADMIN_USERNAME = os.getenv["ADMIN_USERNAME"]
+ADMIN_PASSWORD = os.getenv["ADMIN_PASSWORD"]
 
 security = HTTPBasic()
 
