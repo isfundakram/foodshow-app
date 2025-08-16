@@ -1,113 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Search Registered Guests</title>
+    <meta charset="UTF-8">
+    <title>Registered Customers</title>
+    <link rel="stylesheet" href="/static/style.css">
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 20px;
+            padding: 30px;
         }
-        input, button {
-            padding: 10px;
+
+        input {
             margin: 5px;
+            padding: 6px;
+            width: 200px;
         }
+
         table {
-            margin-top: 20px;
             border-collapse: collapse;
+            margin-top: 20px;
             width: 100%;
         }
+
         th, td {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
+            text-align: left;
         }
+
         th {
-            background: #f2f2f2;
+            background-color: #f4f4f4;
         }
-        .print-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            padding: 6px 12px;
+
+        #filter-box {
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Search Registered Guests</h1>
-    <form id="searchForm">
-        <input type="text" name="customer_code" placeholder="Customer Code">
-        <input type="text" name="attendee_name" placeholder="Attendee Name">
-        <input type="text" name="customer_name" placeholder="Customer Name">
-        <input type="text" name="registration_id" placeholder="Registration ID">
-        <button type="submit">Search</button>
-    </form>
+    <h2>Registered Customers</h2>
 
-    <table id="resultsTable" style="display:none;">
+    <div id="filter-box">
+        <input type="text" id="customerCodeInput" placeholder="Customer Code">
+        <input type="text" id="customerNameInput" placeholder="Customer Name">
+        <input type="text" id="attendeeNameInput" placeholder="Attendee Name">
+        <input type="text" id="registrationIdInput" placeholder="Registration ID">
+        <button onclick="search()">Search</button>
+        <button onclick="resetFilters()">Reset</button>
+    </div>
+
+    <table id="resultsTable">
         <thead>
             <tr>
                 <th>Customer Code</th>
                 <th>Customer Name</th>
                 <th>Attendee Name</th>
                 <th>Registration ID</th>
-                <th>Action</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
 
     <script>
-        document.getElementById('searchForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
+        async function search() {
+            const formData = new FormData();
+            formData.append("customer_code", document.getElementById("customerCodeInput").value);
+            formData.append("customer_name", document.getElementById("customerNameInput").value);
+            formData.append("attendee_name", document.getElementById("attendeeNameInput").value);
+            formData.append("registration_id", document.getElementById("registrationIdInput").value);
 
-            const formData = new FormData(e.target);
-            const response = await fetch('/search', {
-                method: 'POST',
+            const response = await fetch("/search", {
+                method: "POST",
                 body: formData
             });
 
-            const table = document.getElementById('resultsTable');
-            const tbody = table.querySelector('tbody');
-            tbody.innerHTML = "";
+            const results = await response.json();
+            const tableBody = document.querySelector("#resultsTable tbody");
+            tableBody.innerHTML = "";
 
-            if (response.ok) {
-                const results = await response.json();
-                if (results.length > 0) {
-                    results.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${row.customer_code}</td>
-                            <td>${row.customer_name}</td>
-                            <td>${row.attendee_name}</td>
-                            <td>${row.registration_id}</td>
-                            <td><button class="print-button" onclick='sendToBooth(${JSON.stringify(row)})'>Send to Booth</button></td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                    table.style.display = 'table';
-                } else {
-                    alert("No results found.");
-                    table.style.display = 'none';
-                }
-            } else {
-                alert("Search failed.");
-            }
-        });
-
-        async function sendToBooth(row) {
-            const response = await fetch('/booth', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(row)
+            results.forEach(row => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${row.customer_code}</td>
+                    <td>${row.customer_name}</td>
+                    <td>${row.attendee_name}</td>
+                    <td>${row.registration_id}</td>
+                `;
+                tableBody.appendChild(tr);
             });
-
-            if (response.ok) {
-                alert("Sent to Booth!");
-            } else {
-                alert("Failed to send to booth.");
-            }
         }
+
+        function resetFilters() {
+            document.getElementById("customerCodeInput").value = "";
+            document.getElementById("customerNameInput").value = "";
+            document.getElementById("attendeeNameInput").value = "";
+            document.getElementById("registrationIdInput").value = "";
+            search();
+        }
+
+        // Load all by default
+        window.onload = search;
     </script>
 </body>
 </html>
