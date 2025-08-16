@@ -32,7 +32,7 @@ app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, same_site="lax")
 
 templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 # ------------------ AZURE HELPERS ------------------
 blob_service = BlobServiceClient.from_connection_string(AZ_CONN) if AZ_CONN else None
