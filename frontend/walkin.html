@@ -48,6 +48,20 @@
       localStorage.removeItem("authenticated");
       window.location.href = "/static/login.html";
     }
+    function submitWalkinOrRegistered(formData) {
+    fetch('/walkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status) {
+            alert("Submitted and sent to booth queue!");
+        }
+    });
+}
+
   </script>
 </body>
 </html>
