@@ -9,9 +9,11 @@ import os
 
 app = FastAPI()
 
-# Mount static folder
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="static")
+BASE_DIR = os.path.dirname(__file__)
+TEMPLATE_PATH = os.path.join(BASE_DIR, "data", "templates")
+
+app.mount("/static", StaticFiles(directory=TEMPLATE_PATH), name="static")
+templates = Jinja2Templates(directory=TEMPLATE_PATH)
 
 # Environment variables
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
