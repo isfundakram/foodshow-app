@@ -47,11 +47,9 @@ def _container_client():
 def _get_blob_text(blob_name: str) -> str:
     cc = _container_client()
     bc = cc.get_blob_client(blob_name)
-    try:
-        data = bc.download_blob().readall()
-        return data.decode("utf-8")
-    except ResourceNotFoundError:
-        raise
+    data = bc.download_blob().readall()
+    # utf-8-sig removes a hidden BOM that breaks the first header
+    return data.decode("utf-8-sig")
 
 
 def _upload_blob_text(blob_name: str, text: str):
@@ -74,9 +72,18 @@ def read_csv_dicts(blob_name: str) -> list[dict]:
     text = _get_blob_text(blob_name)
     sio = StringIO(text)
     reader = csv.DictReader(sio)
-    rows = [dict({k: (v or "") for k, v in r.items()}) for r in reader]
-    return rows
 
+    # Normalize field names and row keys (strip spaces/BOM)
+    if reader.fieldnames:
+        reader.fieldnames = [(f or "").strip().lstrip("\ufeff") for f in reader.fieldnames]
+
+    rows: list[dict] = []
+    for r in reader:
+        rows.append({
+            (k or "").strip().lstrip("\ufeff"): (v or "").strip()
+            for k, v in r.items()
+        })
+    return rows
 
 def write_csv_dicts(blob_name: str, headers: list[str], rows: list[dict]):
     sio = StringIO()
