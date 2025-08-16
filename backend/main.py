@@ -49,16 +49,20 @@ async def search(
     company: str = Form(""),
     regname: str = Form("")
 ):
-    df = pd.read_csv(f"{DATA_PATH}/registered.csv", encoding="ISO-8859-1")
-    filtered = df[
-        df.apply(lambda row:
-            account.lower() in str(row["Customer Code"]).lower() or
-            first.lower() in str(row["Attendee Name"]).split()[0].lower() or
-            last.lower() in str(row["Attendee Name"]).split()[-1].lower() or
-            company.lower() in str(row["Customer Name"]).lower() or
-            regname.lower() in str(row["Attendee Name"]).lower(), axis=1)
-    ]
-    return filtered.to_dict(orient="records")
+    df = load_registered()
+
+    def match_row(row):
+        return (
+            account.lower() in str(row["Customer Code"]).lower()
+            or first.lower() in str(row["Attendee Name"]).lower().split()[0]
+            or last.lower() in str(row["Attendee Name"]).lower().split()[-1]
+            or company.lower() in str(row["Customer Name"]).lower()
+            or regname.lower() in str(row["Registration ID"]).lower()
+        )
+
+    match = df[df.apply(match_row, axis=1)]
+    return match.to_dict(orient="records")
+
 
 @app.post("/mark_attendance")
 async def mark_attendance(data: dict):
