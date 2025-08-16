@@ -1,39 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Food Show Check-In</title>
+  <meta charset="utf-8" />
+  <title>Food Show App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial; text-align: center; padding: 50px; background: #f4f4f4; }
-    h1 { margin-bottom: 30px; }
-    .button {
-      display: inline-block; padding: 20px 40px; margin: 20px;
-      font-size: 20px; background: #4285F4; color: white;
-      border: none; border-radius: 10px; text-decoration: none;
-    }
-    .button:hover { background: #2a65c9; }
+    body { font-family: system-ui, Arial, sans-serif; display:flex; flex-direction:column;
+           justify-content:center; align-items:center; height:100vh; margin:0; background:#fafafa; }
+    .card { background:#fff; padding:2rem 3rem; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.1); text-align:center; }
+    h1 { margin-bottom:1rem; }
+    p { margin-bottom:2rem; color:#555; }
+    a.button { display:inline-block; padding:.75rem 1.5rem; border-radius:10px; background:#111;
+               color:#fff; text-decoration:none; font-weight:600; }
+    a.button:hover { background:#333; }
   </style>
 </head>
 <body>
-  <script>
-    if (localStorage.getItem("authenticated") !== "true") {
-      window.location.href = "/static/login.html";
-    }
-  </script>
-
-  <h1>Food Show 2025 - Check-In Portal</h1>
-
-  <a href="/static/registered.html" class="button">Registered Guests</a>
-  <a href="/static/walkin.html" class="button">Walk-In Registration</a>
-  <a href="/static/booth.html" class="button">Booth - Print Queue</a>
-
-  <br><br>
-  <button onclick="logout()">Logout</button>
-  <script>
-    function logout() {
-      localStorage.removeItem("authenticated");
-      window.location.href = "/static/login.html";
-    }
-  </script>
+  <div class="card">
+    <h1>Food Show Registration</h1>
+    <p>Welcome to the Food Show staff portal.<br>Login to view registered customers and manage attendees.</p>
+    <a href="login.html" class="button">Login</a>
+  </div>
 </body>
 </html>
