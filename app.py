@@ -23,7 +23,7 @@ WALKINS_BLOB = os.getenv("WALKINS_BLOB", "walkins.csv")
 QUEUE_BLOB = os.getenv("QUEUE_BLOB", "print_queue.csv")
 
 LOGIN_USERNAME = os.getenv("LOGIN_USERNAME")
-LOGIN_PASSWORD = os.getenv["LOGIN_PASSWORD"]
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-secret-change-me")
 
