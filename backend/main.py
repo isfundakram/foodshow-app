@@ -76,9 +76,8 @@ async def search(
     results = df[df.apply(lambda row:
         (account.lower() in str(row.get("Customer Code", "")).lower()) or
         (first.lower() in str(row.get("Attendee Name", "")).split()[0].lower()) or
-        (last.lower() in str(row.get("Attendee Name", "")).split()[-1].lower()) or
         (company.lower() in str(row.get("Customer Name", "")).lower()) or
-        (regname.lower() in str(row.get("Attendee Name", "")).lower()),
+        (regname.lower() in str(row.get("Registration ID", "")).lower()),
         axis=1
     )]
     return results.to_dict(orient="records")
