@@ -1,73 +1,74 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-import pandas as pd
+# backend/main.py
+
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from azure.storage.blob import BlobServiceClient
-import io
+import pandas as pd
 import os
 
-app = FastAPI()
+app = Flask(__name__)
+app.secret_key = 'YOUR_SECRET_KEY'  # change this!
 
-BASE_DIR = os.path.dirname(__file__)
-TEMPLATE_PATH = os.path.join(BASE_DIR, "data", "templates")
+# Azure configuration
+AZURE_CONNECTION_STRING = 'YOUR_AZURE_CONNECTION_STRING'
+BLOB_CONTAINER_NAME = 'registration-data'
+CSV_BLOB_NAME = 'registered.csv'
 
-app.mount("/static", StaticFiles(directory=TEMPLATE_PATH), name="static")
-templates = Jinja2Templates(directory=TEMPLATE_PATH)
+def get_registered_csv():
+    blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
+    blob_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME).get_blob_client(CSV_BLOB_NAME)
+    csv_bytes = blob_client.download_blob().readall()
+    # Use pandas to read the in-memory csv bytes
+    from io import BytesIO
+    df = pd.read_csv(BytesIO(csv_bytes))
+    return df
 
-# Environment variables
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-CONTAINER_NAME = "registration-data"
-BLOB_NAME = "registered.csv"
+# -- ROUTES --
 
-# Read CSV from Blob Storage
-def read_registered_csv():
-    try:
-        blob_service = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-        blob_client = blob_service.get_container_client(CONTAINER_NAME).get_blob_client(BLOB_NAME)
-        download_stream = blob_client.download_blob()
-        df = pd.read_csv(io.BytesIO(download_stream.readall()))
-        return df
-    except Exception as e:
-        print(f"Error reading blob: {e}")
-        return pd.DataFrame(columns=["customer_code", "customer_name", "attendee_name", "registration_id"])
+@app.route('/')
+def home():
+    return redirect(url_for('login'))
 
-# Route: Registered Customers Page
-@app.get("/registered", response_class=HTMLResponse)
-async def get_registered(request: Request):
-    df = read_registered_csv()
-    data = df.to_dict(orient="records")
-    return templates.TemplateResponse("registered.html", {"request": request, "results": data})
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == 'fs2025' and password == 'icbfs1095':
+            session['logged_in'] = True
+            return redirect(url_for('registered'))
+        else:
+            error = 'Invalid Credentials'
+    return render_template('login.html', error=error)
 
-# Route: Search API
-@app.post("/search")
-async def search_registered(
-    customer_code: str = Form(""),
-    customer_name: str = Form(""),
-    attendee_name: str = Form(""),
-    registration_id: str = Form("")
-):
-    try:
-        df = read_registered_csv()
-        filtered = df[
-            df.apply(lambda row:
-                customer_code.lower() in str(row.get("customer_code", "")).lower() and
-                customer_name.lower() in str(row.get("customer_name", "")).lower() and
-                attendee_name.lower() in str(row.get("attendee_name", "")).lower() and
-                registration_id.lower() in str(row.get("registration_id", "")).lower(),
-                axis=1
-            )
-        ]
-        return JSONResponse(filtered.to_dict(orient="records"))
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
 
-# Route: Login
-@app.post("/login")
-async def login(username: str = Form(...), password: str = Form(...)):
-    expected_user = os.getenv("LOGIN_USERNAME", "fs2025")
-    expected_pass = os.getenv("LOGIN_PASSWORD", "icbfs1095")
+@app.route('/registered')
+def registered():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
 
-    if username == expected_user and password == expected_pass:
-        return JSONResponse({"success": True})
-    return JSONResponse({"success": False}, status_code=401)
+    # The main page only renders the HTML
+    return render_template('registered.html')
+
+@app.route('/api/registered')
+def api_registered():
+    if not session.get('logged_in'):
+        return jsonify({"error": "unauthorized"}), 403
+    df = get_registered_csv()
+    # Optionally, filter data with query params
+    filters = {}
+    for key in ['customer_code', 'customer_name', 'attendee_name', 'registered_id']:
+        val = request.args.get(key)
+        if val:
+            filters[key] = val.lower().strip()
+    if filters:
+        for col, val in filters.items():
+            df = df[df[col].astype(str).str.lower().str.contains(val)]
+    return df.to_json(orient='records')
+
+if __name__ == '__main__':
+    app.run(debug=True)
