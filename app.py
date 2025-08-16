@@ -167,12 +167,21 @@ def booth_page(request: Request, _: None = Depends(require_login)):
 # ------------------ API: REGISTERED ------------------
 @app.get("/api/registered")
 def api_registered(_: None = Depends(require_login)):
-    # Merge registered.csv with attendance flags
-    reg_rows = read_csv_dicts(REGISTERED_BLOB)
-    here_ids = {r["registration_id"] for r in read_csv_dicts(ATTENDANCE_BLOB)}
-    for r in reg_rows:
-        r["here"] = "true" if r.get("registration_id") in here_ids else "false"
-    return {"items": reg_rows}
+    try:
+        reg_rows = read_csv_dicts(REGISTERED_BLOB)
+        att_rows = read_csv_dicts(ATTENDANCE_BLOB)
+        here_ids = {(a.get("registration_id") or "") for a in att_rows}
+        for r in reg_rows:
+            rid = (r.get("registration_id") or "")
+            r["here"] = "true" if rid in here_ids else "false"
+        return {"items": reg_rows}
+    except Exception as e:
+        # Temporary visibility to help diagnose; remove once everything works.
+        return JSONResponse(status_code=500, content={
+            "error": type(e).__name__,
+            "message": str(e)
+        })
+
 
 
 @app.post("/api/attendance")
