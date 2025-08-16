@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from azure.storage.blob import BlobServiceClient
 import pandas as pd
-import os
+import requests
 from io import BytesIO
+import os
 
 app = FastAPI()
 
@@ -25,35 +25,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Azure Blob Storage setup
-connect_str = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
-blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-container_name = "foodshow"
+# Replace this with your actual GitHub RAW CSV URL
+GITHUB_CSV_URL = "https://github.com/isfundakram/foodshow-app/blob/main/backend/data/registered.csv"
 
-def read_csv_from_blob(blob_name):
+def read_csv_from_github():
     try:
-        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-        stream = blob_client.download_blob()
-        df = pd.read_csv(BytesIO(stream.readall()), encoding="ISO-8859-1")
+        response = requests.get(GITHUB_CSV_URL)
+        response.raise_for_status()
+        df = pd.read_csv(BytesIO(response.content), encoding="ISO-8859-1")
         df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
         return df
     except Exception as e:
-        print(f"Error reading {blob_name}: {e}")
+        print(f"Error loading CSV from GitHub: {e}")
         return pd.DataFrame()
 
-def append_to_blob_csv(blob_name, new_data: pd.DataFrame):
-    try:
-        df_existing = read_csv_from_blob(blob_name)
-        df_combined = pd.concat([df_existing, new_data], ignore_index=True)
-        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-        output = BytesIO()
-        df_combined.to_csv(output, index=False)
-        output.seek(0)
-        blob_client.upload_blob(output, overwrite=True)
-    except Exception as e:
-        print(f"Error writing to {blob_name}: {e}")
-
-# Login
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
     expected_user = os.environ["LOGIN_USERNAME"]
@@ -62,7 +47,6 @@ async def login(username: str = Form(...), password: str = Form(...)):
         return JSONResponse({"success": True})
     return JSONResponse({"success": False}, status_code=401)
 
-# Search (uses updated snake_case column names)
 @app.post("/search")
 async def search(
     customer_code: str = Form(""),
@@ -70,7 +54,10 @@ async def search(
     customer_name: str = Form(""),
     registration_id: str = Form("")
 ):
-    df = read_csv_from_blob("registered.csv")
+    df = read_csv_from_github()
+
+    # Optional: debug output
+    print("DataFrame loaded:", df.head().to_dict(orient="records"))
 
     results = df[df.apply(lambda row:
         (customer_code.lower() in str(row.get("customer_code", "")).lower()) or
@@ -84,19 +71,15 @@ async def search(
 
 @app.post("/mark_attendance")
 async def mark_attendance(data: dict):
-    df = pd.DataFrame([data])
-    append_to_blob_csv("attendance_log.csv", df)
-    append_to_blob_csv("booth_queue.csv", df)
-    return {"status": "Logged & Queued"}
+    # You can leave this unimplemented or later connect to Azure/DB/CSV
+    print("Attendance logged:", data)
+    return {"status": "Logged (but not saved yet)"}
 
 @app.post("/walkin")
 async def register_walkin(data: dict):
-    df = pd.DataFrame([data])
-    append_to_blob_csv("walkins.csv", df)
-    append_to_blob_csv("booth_queue.csv", df)
-    return {"status": "Walk-in Registered & Queued"}
+    print("Walk-in registered:", data)
+    return {"status": "Walk-in Registered (but not saved yet)"}
 
 @app.get("/booth_queue")
 async def get_booth_queue():
-    df = read_csv_from_blob("booth_queue.csv")
-    return df.to_dict(orient="records")
+    return []  # Placeholder for now
