@@ -1,73 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Search Registered Guest</title>
+  <meta charset="UTF-8" />
+  <title>Registered Guests</title>
+  <script>
+    async function handleSearch(event) {
+      event.preventDefault();
+
+      const formData = new FormData(document.getElementById("searchForm"));
+
+      const response = await fetch("/search", {
+        method: "POST",
+        body: formData
+      });
+
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.length === 0) {
+          resultsDiv.innerHTML = "<p>No matches found.</p>";
+          return;
+        }
+
+        data.forEach((entry) => {
+          const card = document.createElement("div");
+          card.className = "result-card";
+          card.innerHTML = `
+            <p><strong>Customer Code:</strong> ${entry["Customer Code"]}</p>
+            <p><strong>Customer Name:</strong> ${entry["Customer Name"]}</p>
+            <p><strong>Attendee Name:</strong> ${entry["Attendee Name"]}</p>
+            <p><strong>Registration ID:</strong> ${entry["Registration ID"]}</p>
+            <button onclick='submitGuest(${JSON.stringify(entry)})'>Submit</button>
+          `;
+          resultsDiv.appendChild(card);
+        });
+      } else {
+        resultsDiv.innerHTML = "<p>Error occurred during search.</p>";
+      }
+    }
+
+    async function submitGuest(entry) {
+      await fetch("/mark_attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(entry)
+      });
+
+      // Send to booth queue
+      await fetch("/booth_queue", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name: entry["Attendee Name"] })
+      });
+
+      alert(`Marked attendance and sent to booth: ${entry["Attendee Name"]}`);
+    }
+  </script>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    input { display: block; margin: 10px; padding: 8px; width: 300px; }
-    button { padding: 10px 20px; margin: 10px 0; }
-    #results { margin-top: 20px; }
+    .result-card {
+      border: 1px solid #ccc;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
-  <script>
-    if (localStorage.getItem("authenticated") !== "true") {
-      window.location.href = "/static/login.html";
-    }
-  </script>
-
-  <h2>Search Registered Guest</h2>
-  <form id="searchForm">
-    <input name="account" placeholder="Customer Acct #" />
-    <input name="first" placeholder="First Name" />
-    <input name="last" placeholder="Last Name" />
-    <input name="company" placeholder="Company Name" />
-    <input name="regname" placeholder="Registration Name" />
+  <h1>Registered Guest Lookup</h1>
+  <form id="searchForm" onsubmit="handleSearch(event)">
+    <label>Customer Code: <input type="text" name="account" /></label><br/>
+    <label>Customer Name: <input type="text" name="company" /></label><br/>
+    <label>Attendee First Name: <input type="text" name="first" /></label><br/>
+    <label>Attendee Last Name: <input type="text" name="last" /></label><br/>
+    <label>Registration ID: <input type="text" name="regname" /></label><br/>
     <button type="submit">Search</button>
   </form>
 
   <div id="results"></div>
-  <button onclick="logout()">Logout</button>
-
-  <script>
-    const form = document.getElementById('searchForm');
-    const resultsDiv = document.getElementById('results');
-
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const res = await fetch('/search', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      resultsDiv.innerHTML = data.map(d => `
-        <div style="border:1px solid #ccc;padding:10px;margin:10px;">
-          <b>${d['Attendee Name']}</b> - ${d['Customer Name']}<br>
-          ${d['Customer Code']}<br>
-          <button onclick='markAttendance(${JSON.stringify(d)})'>Mark In Attendance - Pick Up Badge</button>
-        </div>
-      `).join('');
-    }
-
-function markAttendance(entry) {
-    fetch('/mark_attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry)
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert("Attendance marked and sent to booth!");
-        loadBoothQueue();
-    });
-}
-
-    function logout() {
-      localStorage.removeItem("authenticated");
-      window.location.href = "/static/login.html";
-    }
-  </script>
 </body>
 </html>
