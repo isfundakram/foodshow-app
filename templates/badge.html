@@ -1,98 +1,86 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Badge</title>
   <style>
-    /* ---- Physical badge size ----
-       Change to 3in 4in if you print 3×4 instead of 4×6.
-    */
-    @page { size: 3in 4in; margin: 0; }
-    html, body { width: 3in; height: 4in; }
+    /* --- Physical size for the label --- */
+    :root { --w: 2in; --h: 4in; --pad: 0.18in; }
+    @page { size: var(--w) var(--h); margin: 0; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
+    html, body {
+      width: var(--w); height: var(--h);
+      margin: 0; padding: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
-    .noprint { position: fixed; top: 0.1in; right: 0.1in; }
-    @media print { .noprint { display: none !important; } }
+    /* Badge canvas */
+    .badge {
+      box-sizing: border-box;
+      width: var(--w); height: var(--h);
+      padding: var(--pad);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      gap: 0.08in;
+      background:#fff;
+    }
 
+    /* Typography tuned for 2×4 */
     .title {
+      margin: 0;
+      text-align: center;
       font-weight: 800;
-      font-size: 44pt;       /* headline “Food Show 2025” */
-      margin: 0.25in 0 0.10in;
+      font-size: .34in;      /* top “Food Show 2025” */
+      line-height: .38in;
+      letter-spacing: .4px;
     }
 
-    .logo {
-      max-width: 3.6in;      /* keep it inside the badge */
-      max-height: 2.1in;
-      object-fit: contain;
-      margin: 0.02in 0 0.06in;
+    .logo { width: 1.6in; height: auto; margin: 0.02in 0 .04in; }
+
+    .label { font-size: .13in; color: #444; margin-top:.02in; }
+    .ccode { font-size: .18in; font-weight: 600; }
+    .cname { font-size: .22in; font-weight: 700; text-align:center; }
+    .aname { font-size: .32in; font-weight: 900; text-align:center; }
+
+    footer.powered {
+      position: absolute;
+      bottom: .08in; left: 0; right: 0;
+      text-align: center;
+      font-size: .11in; color: #666;
     }
 
-    .label {
-      color: #333;
-      font-size: 16pt;
-      margin-top: 0.06in;
+    /* Nice on-screen preview box (ignored when printing) */
+    @media screen {
+      body { background:#f3f3f3; display:flex; align-items:center; justify-content:center; }
+      .badge { box-shadow: 0 0 0 1px #ddd, 0 10px 30px rgba(0,0,0,.08); }
     }
-
-    .value {
-      font-weight: 700;
-      font-size: 26pt;       /* Customer Code / Name */
-      line-height: 1.05;
-      margin: 0.02in 0 0.10in;
-      word-break: break-word;
-    }
-
-    .attendee {
-      font-weight: 800;
-      font-size: 64pt;       /* Big attendee name */
-      line-height: 0.98;
-      margin-top: 0.10in;
-      padding: 0 0.1in;
-      word-break: break-word;
-    }
-
-    /* Optional: auto-shrink long attendee names a bit */
-    .attendee.long { font-size: 54pt; }
-    .attendee.very-long { font-size: 46pt; }
   </style>
 </head>
-<body>
-  <!-- Handy for manual test prints; hidden in print -->
-  <button class="noprint" onclick="window.print()">Print</button>
+<body class="badge-root">
+  <div class="badge">
+    <h1 class="title">Food<br>Show<br>2025</h1>
 
-  <div class="title">Food Show 2025</div>
+    <!-- Update the src path to your logo file -->
+    <img class="logo" src="/static/logo.png" alt="Inter-County Bakery Supply" />
 
-  <!-- Update path if you keep the file elsewhere -->
-  <img class="logo" src="/static/logo.png" alt="Logo" />
+    {% if customer_code %}
+      <div class="label">Customer Code</div>
+      <div class="ccode">{{ customer_code }}</div>
+    {% endif %}
 
-  {% if customer_code %}
-    <div class="label">Customer Code</div>
-    <div class="value">{{ customer_code }}</div>
-  {% endif %}
+    <div class="label">Customer Name</div>
+    <div class="cname">{{ customer_name }}</div>
 
-  <div class="label">Customer Name</div>
-  <div class="value">{{ customer_name }}</div>
+    <div class="aname">{{ attendee_name }}</div>
 
-  <div id="attendee" class="attendee">{{ attendee_name }}</div>
+    <!-- Remove this line if you don’t want branding on the badge -->
+    <footer class="powered">Powered by anayalabs.com</footer>
+  </div>
 
   <script>
-    // Light auto-fit for long names (optional)
-    (function () {
-      const el = document.getElementById('attendee');
-      const len = (el.textContent || '').length;
-      if (len > 18 && len <= 24) el.classList.add('long');
-      else if (len > 24) el.classList.add('very-long');
-    })();
-
-    // Auto-print then close (works nicely with your “Print” buttons)
-    window.onload = () => setTimeout(() => window.print(), 150);
-    window.onafterprint = () => window.close();
+    // Auto-open print unless ?autoprint=0 is present
+    if (location.search.indexOf('autoprint=0') === -1) { window.print(); }
   </script>
 </body>
 </html>
