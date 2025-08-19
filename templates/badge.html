@@ -4,129 +4,104 @@
   <meta charset="utf-8" />
   <title>Badge</title>
   <style>
-    /* ===== Physical label size (LANDSCAPE 3.5" x 1.1") ===== */
+    /* ===== Badge size (LANDSCAPE) ===== */
     :root{
-      --w: 3.5in;            /* width  */
-      --h: 1.1in;            /* height */
-      --px: .08in;           /* horizontal padding */
-      --py: .06in;           /* vertical padding  */
-      --gap: .06in;          /* space between logo/text */
+      --badge-w: 4in;   /* width  */
+      --badge-h: 3in;   /* height */
+      --pad-x: .22in;
+      --pad-y: .18in;
     }
-    @page { size: var(--w) var(--h); margin: 0; }
 
-    /* Screen preview */
-    html, body { height: 100%; }
+    html,body{height:100%}
     body{
-      margin: 0;
-      background: #eaeef7;
-      display: flex; align-items: center; justify-content: center;
-      font-family: Inter, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      color: #111;
+      margin:0;
+      background:#eaeef7;
+      display:flex; align-items:center; justify-content:center;
+      font-family: Inter, system-ui, Segoe UI, Arial, Helvetica, sans-serif;
+      color:#111;
     }
 
-    /* Badge canvas */
     .badge{
-      width: var(--w); height: var(--h);
-      background: #fff;
-      border: 1px solid #ddd; border-radius: .06in;
+      width: var(--badge-w);
+      height: var(--badge-h);
+      background:#fff;
       box-shadow: 0 10px 28px rgba(0,0,0,.18);
-      padding: var(--py) var(--px);
-      display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
-      gap: var(--gap);
-      overflow: hidden;
+      border: 1px solid #ddd;
+      border-radius: .06in;
+      padding: var(--pad-y) var(--pad-x);
+      display:flex; flex-direction:column; align-items:center;
     }
 
-    /* Left: logo block (optional; remove if you don't use a logo) */
-    .logo-wrap{
-      width: .68in; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      flex: 0 0 .68in;
-    }
-    .logo{
-      max-width: .64in; max-height: .9in; object-fit: contain;
-    }
-
-    /* Right: stacked text */
-    .text{
-      display: flex; flex-direction: column; justify-content: center;
+    /* Layout tuned for 4x3 */
+    .title{
+      margin: 0 0 .06in;
+      font-weight: 900;
+      font-size: .38in;
       line-height: 1.05;
-      min-width: 0;  /* allow wrapping */
-      flex: 1 1 auto;
+      text-align:center;
     }
 
-    .event{           /* tiny event title */
-      font-weight: 800;
-      font-size: .12in;
-      letter-spacing: .2px;
-      margin: 0 0 .02in 0;
-      white-space: nowrap;
+    .logo{
+      width: 2.2in;
+      max-height: 1.0in;
+      object-fit: contain;
+      margin: .02in 0 .06in;
     }
 
-    .ccode-label{
-      font-size: .10in; color: #666; margin: 0;
-    }
-    .ccode{
-      font-size: .13in; font-weight: 700; margin: 0 0 .02in 0;
-      white-space: nowrap;
+    .label{ font-size:.15in; color:#555; margin-top:.02in }
+
+    .customer-code{
+      font-size: .22in; font-weight: 700; text-align:center; margin-top:.02in;
     }
 
-    .cname{
-      font-size: .16in; font-weight: 800; margin: 0;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .customer-name{
+      font-size: .26in; font-weight: 800; text-align:center; margin-top:.04in;
     }
 
-    .aname{
-      font-size: .22in; font-weight: 900; margin: .01in 0 0 0;
-      overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap;
+    .attendee-name{
+      font-size: .44in; font-weight: 900; text-align:center;
+      margin-top: .06in;
+      line-height: 1.02;
+      word-break: break-word;
     }
 
-    /* Auto-tighten long names */
-    .tight  { font-size: .20in; }
-    .tighter{ font-size: .18in; }
+    .footer{ margin-top:auto; font-size:.15in; color:#666 }
 
-    /* Print cleanup */
-    @media print {
-      html, body { background: transparent; }
-      .badge { box-shadow: none; border: 0; }
-      .no-print { display: none !important; }
+    .no-print{
+      margin-top:.25in;
+      display:inline-block; padding:.4rem .7rem; border-radius:10px;
+      background:#111; color:#fff; text-decoration:none;
+      font-weight:700;
+    }
+
+    /* ===== Print rules ===== */
+    @media print{
+      /* Width first, then height → landscape */
+      @page{ size: var(--badge-w) var(--badge-h); margin: 0; }
+      html,body{ background:transparent; }
+      .badge{ box-shadow:none; border:0; margin:0; }
+      .no-print{ display:none !important; }
     }
   </style>
 </head>
 <body>
   <div class="badge">
-    <div class="logo-wrap">
-      <img class="logo" src="/static/logo.png" alt="Logo" />
-    </div>
+    <div class="title">Food Show 2025</div>
 
-    <div class="text">
-      <div class="event">Food Show 2025</div>
+    <img class="logo" src="/static/logo.png" alt="Logo" />
 
-      {% if customer_code %}
-        <div class="ccode-label">Customer Code</div>
-        <div class="ccode">{{ customer_code }}</div>
-      {% endif %}
+    {% if customer_code %}
+      <div class="label">Customer Code</div>
+      <div class="customer-code">{{ customer_code }}</div>
+    {% endif %}
 
-      <div class="cname">{{ customer_name }}</div>
-      <div id="aname" class="aname">{{ attendee_name }}</div>
-    </div>
+    <div class="customer-name">{{ customer_name }}</div>
+    <div class="attendee-name">{{ attendee_name }}</div>
+
+    <div class="footer">Powered by anayalabs.com</div>
   </div>
 
-  <script>
-    // Slightly shrink attendee font if too long for 3.5" width
-    (function () {
-      const el = document.getElementById('aname');
-      const len = (el.textContent || '').trim().length;
-      if (len > 18 && len <= 24) el.classList.add('tight');
-      else if (len > 24) el.classList.add('tighter');
-    })();
-
-    // Auto-print and close the window (works with your flow)
-    window.onload = () => setTimeout(() => window.print(), 150);
-    window.onafterprint = () => window.close();
-  </script>
-
-  <!-- Manual print button (hidden on print) -->
+  <!-- On-screen print button (hidden when printing) -->
   <a class="no-print" href="javascript:window.print()">Print</a>
 </body>
 </html>
