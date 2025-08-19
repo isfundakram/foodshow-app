@@ -1,11 +1,84 @@
 {% extends "layout.html" %}
 {% block content %}
-  <section class="card">
+
+<!-- Inline + scoped CSS (only affects elements inside .walkin-scope) -->
+<style>
+  .walkin-scope{ color:#e5e7eb; }
+  .walkin-scope .wk-card{
+    background: linear-gradient(180deg,#0b1220,#111827);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:16px;
+    padding:20px;
+    margin:16px 0;
+    box-shadow:0 6px 20px rgba(0,0,0,.35);
+  }
+  .walkin-scope h2,.walkin-scope h3{ margin:0 0 14px; color:#e5e7eb; }
+
+  /* List-style form */
+  .walkin-scope .wk-form-list{
+    list-style:none;
+    margin:0; padding:0;
+    display:grid; gap:14px;
+  }
+  .walkin-scope .wk-field label{
+    display:block; margin:0 0 6px; font-size:.9rem; color:#9ca3af;
+  }
+  .walkin-scope .wk-field input,
+  .walkin-scope .wk-field select{
+    width:100%;
+    padding:12px 14px;
+    border-radius:12px;
+    background:#0b1020;
+    color:#e5e7eb;
+    border:1px solid rgba(255,255,255,.08);
+    outline:none;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .06s ease;
+  }
+  .walkin-scope .wk-field input::placeholder{ color:#708090; }
+  .walkin-scope .wk-field input:hover,
+  .walkin-scope .wk-field select:hover{
+    border-color:rgba(255,255,255,.15);
+    transform: translateY(-1px);
+  }
+  .walkin-scope .wk-field input:focus,
+  .walkin-scope .wk-field select:focus{
+    border-color:#22c55e;
+    box-shadow:0 0 0 3px rgba(34,197,94,.35);
+  }
+  .walkin-scope .wk-actions{ margin-top:6px; }
+  .walkin-scope .wk-btn{
+    padding:12px 18px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg,rgba(34,197,94,.15),rgba(34,197,94,.08));
+    color:#e5e7eb; font-weight:600; cursor:pointer;
+    transition: transform .08s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .walkin-scope .wk-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 24px rgba(34,197,94,.25); }
+
+  /* Table */
+  .walkin-scope .wk-table{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; }
+  .walkin-scope .wk-table thead th{
+    background:#0d1528; color:#e5e7eb; text-align:left; padding:12px 14px; font-weight:600;
+  }
+  .walkin-scope .wk-table tbody td{
+    background:#0a0f1e; color:#e5e7eb; padding:12px 14px; border-top:1px solid rgba(255,255,255,.05);
+  }
+  .walkin-scope .wk-table tbody tr:hover td{ background:#0c1323; }
+
+  /* Optional: two columns on wide screens, keep button full width */
+  @media (min-width:900px){
+    .walkin-scope .wk-form-list{ grid-template-columns:1fr 1fr; }
+    .walkin-scope .wk-actions{ grid-column:1 / -1; }
+  }
+</style>
+
+<div class="walkin-scope">
+  <section class="wk-card">
     <h2>Walk-In Registration</h2>
 
-    <form id="walkin_form" class="form form--list">
-      <ul class="form-list">
-        <li class="field">
+    <form id="walkin_form" class="wk-form">
+      <ul class="wk-form-list">
+        <li class="wk-field">
           <label for="walkin_type">Type</label>
           <select id="walkin_type" name="walkin_type" required>
             <option value="customer">customer</option>
@@ -14,52 +87,53 @@
           </select>
         </li>
 
-        <li class="field">
+        <li class="wk-field">
           <label for="customer_code">customer_code (if applicable)</label>
-          <input id="customer_code" name="customer_code" />
+          <input id="customer_code" name="customer_code" placeholder="" />
         </li>
 
-        <li class="field">
+        <li class="wk-field">
           <label for="customer_name">customer_name</label>
           <input id="customer_name" name="customer_name" required />
         </li>
 
-        <li class="field">
+        <li class="wk-field">
           <label for="attendee_name">attendee_name</label>
           <input id="attendee_name" name="attendee_name" required />
         </li>
 
-        <li class="field">
+        <li class="wk-field">
           <label for="email">email</label>
           <input id="email" type="email" name="email" />
         </li>
 
-        <li class="field">
+        <li class="wk-field">
           <label for="phone">phone#</label>
           <input id="phone" name="phone" />
         </li>
 
-        <li class="field">
+        <li class="wk-field" style="grid-column:1 / -1;">
           <label for="how_heard">how_did_you_hear_about_us</label>
           <input id="how_heard" name="how_heard" />
         </li>
 
-        <li class="actions">
-          <button type="submit" class="btn-primary">Submit & Queue Badge</button>
+        <li class="wk-actions">
+          <button type="submit" class="wk-btn">Submit & Queue Badge</button>
         </li>
       </ul>
     </form>
   </section>
 
-  <section class="card">
+  <section class="wk-card">
     <h3>Walk-In Log (this session)</h3>
-    <table id="walkin_table" class="table">
+    <table id="walkin_table" class="wk-table">
       <thead>
         <tr><th>Type</th><th>customer_name</th><th>attendee_name</th><th>Print</th></tr>
       </thead>
       <tbody></tbody>
     </table>
   </section>
+</div>
 
-  <script src="/static/js/walkin.js"></script>
+<script src="/static/js/walkin.js"></script>
 {% endblock %}
