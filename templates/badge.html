@@ -2,85 +2,106 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Badge</title>
   <style>
-    /* --- Physical size for the label --- */
-    :root { --w: 2in; --h: 4in; --pad: 0.18in; }
-    @page { size: var(--w) var(--h); margin: 0; }
-
-    html, body {
-      width: var(--w); height: var(--h);
-      margin: 0; padding: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    /* ===== Badge size (LANDSCAPE) ===== */
+    :root{
+      --badge-w: 4in;   /* width  */
+      --badge-h: 3in;   /* height */
+      --pad-x: .22in;
+      --pad-y: .18in;
     }
 
-    /* Badge canvas */
-    .badge {
-      box-sizing: border-box;
-      width: var(--w); height: var(--h);
-      padding: var(--pad);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: flex-start;
-      gap: 0.08in;
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:#eaeef7;
+      display:flex; align-items:center; justify-content:center;
+      font-family: Inter, system-ui, Segoe UI, Arial, Helvetica, sans-serif;
+      color:#111;
+    }
+
+    .badge{
+      width: var(--badge-w);
+      height: var(--badge-h);
       background:#fff;
+      box-shadow: 0 10px 28px rgba(0,0,0,.18);
+      border: 1px solid #ddd;
+      border-radius: .06in;
+      padding: var(--pad-y) var(--pad-x);
+      display:flex; flex-direction:column; align-items:center;
     }
 
-    /* Typography tuned for 2×4 */
-    .title {
-      margin: 0;
-      text-align: center;
-      font-weight: 800;
-      font-size: .34in;      /* top “Food Show 2025” */
-      line-height: .38in;
-      letter-spacing: .4px;
+    /* Layout tuned for 4x3 */
+    .title{
+      margin: 0 0 .06in;
+      font-weight: 900;
+      font-size: .38in;
+      line-height: 1.05;
+      text-align:center;
     }
 
-    .logo { width: 1.6in; height: auto; margin: 0.02in 0 .04in; }
-
-    .label { font-size: .13in; color: #444; margin-top:.02in; }
-    .ccode { font-size: .18in; font-weight: 600; }
-    .cname { font-size: .22in; font-weight: 700; text-align:center; }
-    .aname { font-size: .32in; font-weight: 900; text-align:center; }
-
-    footer.powered {
-      position: absolute;
-      bottom: .08in; left: 0; right: 0;
-      text-align: center;
-      font-size: .11in; color: #666;
+    .logo{
+      width: 2.2in;
+      max-height: 1.0in;
+      object-fit: contain;
+      margin: .02in 0 .06in;
     }
 
-    /* Nice on-screen preview box (ignored when printing) */
-    @media screen {
-      body { background:#f3f3f3; display:flex; align-items:center; justify-content:center; }
-      .badge { box-shadow: 0 0 0 1px #ddd, 0 10px 30px rgba(0,0,0,.08); }
+    .label{ font-size:.15in; color:#555; margin-top:.02in }
+
+    .customer-code{
+      font-size: .22in; font-weight: 700; text-align:center; margin-top:.02in;
+    }
+
+    .customer-name{
+      font-size: .26in; font-weight: 800; text-align:center; margin-top:.04in;
+    }
+
+    .attendee-name{
+      font-size: .44in; font-weight: 900; text-align:center;
+      margin-top: .06in;
+      line-height: 1.02;
+      word-break: break-word;
+    }
+
+    .footer{ margin-top:auto; font-size:.15in; color:#666 }
+
+    .no-print{
+      margin-top:.25in;
+      display:inline-block; padding:.4rem .7rem; border-radius:10px;
+      background:#111; color:#fff; text-decoration:none;
+      font-weight:700;
+    }
+
+    /* ===== Print rules ===== */
+    @media print{
+      /* Width first, then height → landscape */
+      @page{ size: var(--badge-w) var(--badge-h); margin: 0; }
+      html,body{ background:transparent; }
+      .badge{ box-shadow:none; border:0; margin:0; }
+      .no-print{ display:none !important; }
     }
   </style>
 </head>
-<body class="badge-root">
+<body>
   <div class="badge">
-    <h1 class="title">Food<br>Show<br>2025</h1>
+    <div class="title">Food Show 2025</div>
 
-    <!-- Update the src path to your logo file -->
-    <img class="logo" src="/static/logo.png" alt="Inter-County Bakery Supply" />
+    <img class="logo" src="/static/logo.png" alt="Logo" />
 
     {% if customer_code %}
       <div class="label">Customer Code</div>
-      <div class="ccode">{{ customer_code }}</div>
+      <div class="customer-code">{{ customer_code }}</div>
     {% endif %}
 
-    <div class="label">Customer Name</div>
-    <div class="cname">{{ customer_name }}</div>
+    <div class="customer-name">{{ customer_name }}</div>
+    <div class="attendee-name">{{ attendee_name }}</div>
 
-    <div class="aname">{{ attendee_name }}</div>
-
-    <!-- Remove this line if you don’t want branding on the badge -->
-    <footer class="powered">Powered by anayalabs.com</footer>
+    <div class="footer">Powered by anayalabs.com</div>
   </div>
 
-  <script>
-    // Auto-open print unless ?autoprint=0 is present
-    if (location.search.indexOf('autoprint=0') === -1) { window.print(); }
-  </script>
+  <!-- On-screen print button (hidden when printing) -->
+  <a class="no-print" href="javascript:window.print()">Print</a>
 </body>
 </html>
