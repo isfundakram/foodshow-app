@@ -1,107 +1,40 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Badge</title>
-  <style>
-    /* ===== Badge size (LANDSCAPE) ===== */
-    :root{
-      --badge-w: 3.93in;   /* width  */
-      --badge-h: 2.44in;   /* height */
-      --pad-x: .12in;
-      --pad-y: .10in;
-    }
-
-    html,body{height:100%}
-    body{
-      margin:0;
-      background:#eaeef7;
-      display:flex; align-items:center; justify-content:center;
-      font-family: Inter, system-ui, Segoe UI, Arial, Helvetica, sans-serif;
-      color:#111;
-    }
-
-    .badge{
-      width: var(--badge-w);
-      height: var(--badge-h);
-      background:#fff;
-      box-shadow: 0 10px 28px rgba(0,0,0,.18);
-      border: 1px solid #ddd;
-      border-radius: .06in;
-      padding: var(--pad-y) var(--pad-x);
-      display:flex; flex-direction:column; align-items:center;
-    }
-
-    /* Layout tuned for 4x3 */
-    .title{
-      margin: 0 0 .06in;
-      font-weight: 900;
-      font-size: .38in;
-      line-height: 1.05;
-      text-align:center;
-    }
-
-    .logo{
-      width: 2.2in;
-      max-height: 1.0in;
-      object-fit: contain;
-      margin: .02in 0 .06in;
-    }
-
-    .label{ font-size:.15in; color:#555; margin-top:.02in }
-
-    .customer-code{
-      font-size: .22in; font-weight: 700; text-align:center; margin-top:.02in;
-    }
-
-    .customer-name{
-      font-size: .26in; font-weight: 800; text-align:center; margin-top:.04in;
-    }
-
-    .attendee-name{
-      font-size: .44in; font-weight: 900; text-align:center;
-      margin-top: .06in;
-      line-height: 1.02;
-      word-break: break-word;
-    }
-
-    .footer{ margin-top:auto; font-size:.15in; color:#666 }
-
-    .no-print{
-      margin-top:.25in;
-      display:inline-block; padding:.4rem .7rem; border-radius:10px;
-      background:#111; color:#fff; text-decoration:none;
-      font-weight:700;
-    }
-
-    /* ===== Print rules ===== */
-    @media print{
-      /* Width first, then height → landscape */
-      @page{ size: var(--badge-w) var(--badge-h); margin: 0; }
-      html,body{ background:transparent; }
-      .badge{ box-shadow:none; border:0; margin:0; }
-      .no-print{ display:none !important; }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Badge Print</title>
 </head>
-<body>
-  <div class="badge">
-    <div class="title">Food Show 2025</div>
+<body style="margin:0; padding:0;">
 
-    <img class="logo" src="/static/logo.png" alt="Logo" />
+  <div style="
+    width: 4in; 
+    height: 3in; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    border: 2px solid black; 
+    font-family: Arial, Helvetica, sans-serif;
+    text-align: center;
+    overflow: hidden;
+  ">
 
-    {% if customer_code %}
-      <div class="label">Customer Code</div>
-      <div class="customer-code">{{ customer_code }}</div>
-    {% endif %}
+    <!-- Attendee Name (biggest, center) -->
+    <div style="font-size: 40pt; font-weight: bold; line-height: 1.1;">
+      {{ attendee_name }}
+    </div>
 
-    <div class="customer-name">{{ customer_name }}</div>
-    <div class="attendee-name">{{ attendee_name }}</div>
+    <!-- Customer Name (medium, underneath) -->
+    <div style="font-size: 26pt; margin-top: 10px; line-height: 1.2;">
+      {{ customer_name }}
+    </div>
 
-    <div class="footer">Powered by anayalabs.com</div>
+    <!-- Customer Code (smaller, bottom center) -->
+    <div style="font-size: 18pt; margin-top: auto; margin-bottom: 10px; font-weight: bold;">
+      {{ customer_code }}
+    </div>
+
   </div>
 
-  <!-- On-screen print button (hidden when printing) -->
-  <a class="no-print" href="javascript:window.print()">Print</a>
 </body>
 </html>
