@@ -1,42 +1,65 @@
 {% extends "layout.html" %}
 {% block content %}
-  <h2>Walk‑In Registration</h2>
-  <form id="walkin_form">
-    <label>Type</label>
-    <select name="walkin_type" required>
-      <option value="customer">customer</option>
-      <option value="vendor">vendor</option>
-      <option value="family/friend">family/friend</option>
-    </select>
+  <section class="card">
+    <h2>Walk-In Registration</h2>
 
-    <label>customer_code (if applicable)</label>
-    <input name="customer_code" />
+    <form id="walkin_form" class="form form--list">
+      <ul class="form-list">
+        <li class="field">
+          <label for="walkin_type">Type</label>
+          <select id="walkin_type" name="walkin_type" required>
+            <option value="customer">customer</option>
+            <option value="vendor">vendor</option>
+            <option value="family/friend">family/friend</option>
+          </select>
+        </li>
 
-    <label>customer_name</label>
-    <input name="customer_name" required />
+        <li class="field">
+          <label for="customer_code">customer_code (if applicable)</label>
+          <input id="customer_code" name="customer_code" />
+        </li>
 
-    <label>attendee_name</label>
-    <input name="attendee_name" required />
+        <li class="field">
+          <label for="customer_name">customer_name</label>
+          <input id="customer_name" name="customer_name" required />
+        </li>
 
-    <label>email</label>
-    <input type="email" name="email" />
+        <li class="field">
+          <label for="attendee_name">attendee_name</label>
+          <input id="attendee_name" name="attendee_name" required />
+        </li>
 
-    <label>phone#</label>
-    <input name="phone" />
+        <li class="field">
+          <label for="email">email</label>
+          <input id="email" type="email" name="email" />
+        </li>
 
-    <label>how_did_you_hear_about_us</label>
-    <input name="how_heard" />
+        <li class="field">
+          <label for="phone">phone#</label>
+          <input id="phone" name="phone" />
+        </li>
 
-    <button type="submit">Submit & Queue Badge</button>
-  </form>
+        <li class="field">
+          <label for="how_heard">how_did_you_hear_about_us</label>
+          <input id="how_heard" name="how_heard" />
+        </li>
 
-  <h3>Walk‑In Log (this session)</h3>
-  <table id="walkin_table">
-    <thead>
-    <tr><th>Type</th><th>customer_name</th><th>attendee_name</th><th>Print</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+        <li class="actions">
+          <button type="submit" class="btn-primary">Submit & Queue Badge</button>
+        </li>
+      </ul>
+    </form>
+  </section>
+
+  <section class="card">
+    <h3>Walk-In Log (this session)</h3>
+    <table id="walkin_table" class="table">
+      <thead>
+        <tr><th>Type</th><th>customer_name</th><th>attendee_name</th><th>Print</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
 
   <script src="/static/js/walkin.js"></script>
 {% endblock %}
