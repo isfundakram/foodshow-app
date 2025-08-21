@@ -1,121 +1,165 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Badge</title>
+
   <style>
-    /* ========= SIZING (QL-600 Visitor Name Badge 2.44" x 3.93") ========= */
+    /* -------- PHYSICAL SIZE (Brother QL-600 Visitor Name Badge Label) ------- *
+       Driver: 62 mm Continuous (or Visitor Name Badge preset), Length ≈ 100 mm.
+       We set slightly smaller than nominal so the browser never pushes to a 2nd page.
+    * ------------------------------------------------------------------------ */
     :root{
-      /* Brother 2.44" x 3.93" = 62mm x 99.8mm (landscape) */
-      --w: 99.8mm;
-      --h: 62mm;
+      /* along the roll (length), across the roll (width) */
+      --w: 98.6mm;  /* ~3.88" (nominal ≈ 100 mm / 3.93") */
+      --h: 60.8mm;  /* ~2.39" (nominal ≈ 62 mm / 2.44") */
 
-      /* FONT TARGETS – tweak these if you want */
-      --fs-title:     11pt;   /* Food Show 2025 (a little smaller) */
-      --fs-acct:       9pt;   /* Customer Code line */
-      --fs-customer:  12pt;   /* Customer name */
-      --fs-attendee:  39pt;   /* BIG Attendee name */
+      /* inner padding */
+      --px: 3mm;
+      --py: 2.2mm;
 
-      /* micro layout controls */
-      --pad-x: 2.0mm;   /* left/right padding */
-      --pad-top: 1.5mm; /* top padding */
-      --gap: 0.8mm;     /* vertical gap between lines */
-      --logo-h: 12mm;   /* logo max height */
-      --logo-w: 75%;    /* logo max width */
-      --name-tight: 0.95; /* line-height for big name */
+      /* Typography (tune if needed) */
+      --fs-title:    26pt;  /* “Food Show 2025” */
+      --fs-code:     15pt;  /* Customer Code line */
+      --fs-customer: 22pt;  /* Customer Name */
+      --fs-attendee: 40pt;  /* Attendee Name (largest) */
     }
 
-    /* Page setup */
+    /* Lock the sheet / page to the label size */
     @page { size: var(--w) var(--h); margin: 0; }
-    html, body { margin: 0; padding: 0; }
+    html, body { width: var(--w); height: var(--h); margin: 0; }
+
+    /* Hide any global app styles by scoping everything to .badge only */
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-    /* Canvas */
-    .badge {
+    .badge{
       width: var(--w);
       height: var(--h);
-      display: grid;
-      place-items: center;
-    }
-    .badge-inner{
-      width: 100%;
-      height: 100%;
-      display: grid;
-      grid-template-rows: auto auto auto auto 1fr;  /* title, logo, acct, customer, name */
-      align-content: start;
-      justify-items: center;
-      padding: var(--pad-top) var(--pad-x) 0 var(--pad-x);
-      row-gap: var(--gap);
+      overflow: hidden;                 /* clip anything that tries to spill */
+      page-break-inside: avoid; break-inside: avoid;
       box-sizing: border-box;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Lines */
-    .show-title{
-      font: 900 var(--fs-title)/1.05 "Inter", system-ui, -apple-system, Arial, sans-serif;
-      letter-spacing: .2px;
+    /* Optional: red dashed outline on screen so you can see the label edge. */
+    @media screen { .badge { outline: 1px dashed #f33; } }
+    @media print  { .badge { outline: none; } }
+
+    .badge-inner{
+      height: 100%;
+      width: 100%;
+      padding: var(--py) var(--px);
+      display: grid;
+      grid-template-rows: auto auto auto 1fr; /* title, code, customer, attendee */
+      align-items: center;
+      justify-items: center;
+      row-gap: 2mm;
+      box-sizing: border-box;
+      text-align: center;
     }
-    .logo{
-      max-height: var(--logo-h);
-      max-width: var(--logo-w);
-      object-fit: contain;
-      display:block;
-    }
-    .acct-code{
-      font: 800 var(--fs-acct)/1 "Inter", system-ui, -apple-system, Arial, sans-serif;
-    }
-    .customer-name{
-      font: 800 var(--fs-customer)/1 "Inter", system-ui, -apple-system, Arial, sans-serif;
-    }
-    .attendee-name{
-      font: 900 var(--fs-attendee)/var(--name-tight) "Inter", system-ui, -apple-system, Arial, sans-serif;
+
+    .show-title    { font-size: var(--fs-title);    font-weight: 800; line-height: 1.05; }
+    .cust-code     { font-size: var(--fs-code);     font-weight: 700; line-height: 1.10; }
+    .customer-name { font-size: var(--fs-customer); font-weight: 800; line-height: 1.02; }
+    .attendee-name { font-size: var(--fs-attendee); font-weight: 900; line-height: 0.96; }
+
+    /* Keep to one line; JS below will shrink if it overflows */
+    .cust-code,
+    .customer-name,
+    .attendee-name {
       white-space: nowrap;
-    }
-
-    /* Prevent 2-label overflow: auto-shrink if anything would wrap */
-    .fit{
-      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 100%;
     }
 
-    /* No screen margins; print immediately from this page if desired */
-    @media screen {
-      body { background:#f3f4f6; display:grid; place-items:center; height:100vh; }
-      .badge { background:#fff; box-shadow:0 0 0 1px #e5e7eb, 0 12px 35px rgba(0,0,0,.12) }
+    /* Logo sits between title and names; size to fit */
+    .logo {
+      max-height: 21mm;           /* fits comfortably on 62 mm width */
+      max-width: 90%;
+      object-fit: contain;
+      margin-top: 1mm;
+      margin-bottom: 1mm;
+      display: block;
     }
+
+    /* Screen-only helper bar (not printed) */
+    @media screen {
+      .toolbar {
+        position: fixed;
+        top: 6px; left: 6px;
+        background: #111; color: white;
+        font: 12px/1.2 system-ui, sans-serif;
+        padding: 6px 10px; border-radius: 8px; opacity: 0.9;
+      }
+      .toolbar a { color: #a7f3d0; text-decoration: none; margin-left: 8px; }
+    }
+    @media print { .toolbar { display: none; } }
   </style>
 </head>
 <body>
+
+  <!-- Screen-only quick actions (won’t print) -->
+  <div class="toolbar">
+    Badge preview
+    <a href="javascript:window.print()">Print</a>
+  </div>
+
   <div class="badge">
     <div class="badge-inner">
-      <div class="show-title fit">Food Show 2025</div>
 
-      <!-- Use your static logo; keep it lightweight PNG -->
-      <img class="logo" src="/static/logo.png" alt="Logo" />
+      <!-- Top title -->
+      <div class="show-title">Food Show 2025</div>
 
+      <!-- Logo -->
+      <img class="logo"
+           src="{{ request.url_for('static', path='logo.png') }}"
+           alt="logo" />
+
+      <!-- Customer Code (optional) -->
       {% if customer_code %}
-      <div class="acct-code fit">Customer Code: ACCT # - {{ customer_code }}</div>
+        <div class="cust-code auto-shrink">Customer Code: {{ customer_code }}</div>
       {% endif %}
 
-      <div class="customer-name fit">{{ customer_name }}</div>
-      <div class="attendee-name fit">{{ attendee_name }}</div>
+      <!-- Customer Name -->
+      <div class="customer-name auto-shrink">{{ customer_name }}</div>
+
+      <!-- Attendee Name (largest line) -->
+      <div class="attendee-name auto-shrink">{{ attendee_name }}</div>
+
     </div>
   </div>
 
   <script>
-    /* Auto-shrink the BIG name if it overflows the last row */
-    (function(){
-      const name = document.querySelector('.attendee-name');
-      if(!name) return;
-      const max = parseFloat(getComputedStyle(document.documentElement)
-                    .getPropertyValue('--fs-attendee'));
-      let size = max, i=0;
-      while (i<40 && (name.scrollWidth > name.clientWidth || name.scrollHeight > name.clientHeight)){
-        size -= 0.6; /* step down carefully */
-        name.style.fontSize = size + 'pt';
-        i++;
+    /**
+     * Shrink text so it never wraps/spills.
+     * Keeps everything on a single label page.
+     */
+    function shrinkToFit(el, minPt = 10) {
+      const pxPerPt = 96/72; // CSS px per typographic point
+      let fs = parseFloat(getComputedStyle(el).fontSize);
+      const start = fs;
+      // Keep lowering until it fits horizontally AND vertically (safety)
+      while ((el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight) &&
+             fs/pxPerPt > minPt) {
+        fs -= 1;
+        el.style.fontSize = fs + 'px';
       }
-    })();
+    }
+
+    function fitAll() {
+      document.querySelectorAll('.auto-shrink').forEach(el => shrinkToFit(el));
+    }
+
+    // Fit on load/resize/print, then auto-open print dialog once.
+    addEventListener('load', () => {
+      fitAll();
+      // Give layout a tick before printing, helps on some browsers
+      setTimeout(() => window.print(), 150);
+    });
+    addEventListener('resize', fitAll);
+    addEventListener('beforeprint', fitAll);
   </script>
 </body>
 </html>
