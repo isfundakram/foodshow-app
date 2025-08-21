@@ -1,18 +1,110 @@
 {% extends "layout.html" %}
 {% block content %}
-  <h2>Booth / Print Queue</h2>
-  <div class="hint">This auto-refreshes every 3 seconds.</div>
-  <table id="queue_table">
-    <thead>
-      <tr>
-        <th>customer_code</th>
-        <th>customer_name</th>
-        <th>attendee_name</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
 
-  <script src="/static/js/booth.js"></script>
+<h2 class="hint">Walk-In Print Queue</h2>
+
+<div style="margin-bottom:10px; display:flex; gap:8px;">
+  <button class="queue-btn" onclick="loadQueue()">Refresh</button>
+</div>
+
+<table id="queue_table">
+  <thead>
+    <tr>
+      <th>customer_code</th>
+      <th>customer_name</th>
+      <th>attendee_name</th>
+      <th style="width:120px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="qbody">
+    <!-- rows inserted by JS -->
+  </tbody>
+</table>
+
+<script>
+  async function loadQueue() {
+    // Ask server for walk-ins only (supports new API filter you added)
+    let data = { items: [] };
+    try {
+      const res = await fetch('/api/queue?source=walkin', { credentials: 'same-origin' });
+      data = await res.json();
+    } catch (e) {
+      // ignore; we'll still handle gracefully
+    }
+
+    // Safety net: enforce walk-in filter on client as well
+    const items = (data.items || []).filter(i => (i.source || '').toLowerCase() === 'walkin');
+
+    const body = document.getElementById('qbody');
+    body.innerHTML = '';
+
+    if (!items.length) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="4" style="text-align:center; color:#666; padding:16px;">
+        No walk-in badges in queue.
+      </td>`;
+      body.appendChild(tr);
+      return;
+    }
+
+    items.forEach(q => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(q.customer_code || '')}</td>
+        <td>${escapeHtml(q.customer_name || '')}</td>
+        <td>${escapeHtml(q.attendee_name || '')}</td>
+        <td>
+          <button class="badge-btn" onclick="printBadge('${q.queue_id}')">Print</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  async function markPrinted(queueId) {
+    try {
+      await fetch('/api/queue/mark_printed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ queue_id: queueId }),
+        credentials: 'same-origin'
+      });
+    } catch {}
+  }
+
+  function printBadge(queueId) {
+    const w = window.open(`/badge/${queueId}`, '_blank', 'noopener,noreferrer');
+    if (!w) return; // popup blocked
+
+    const afterLoad = () => {
+      try { w.focus(); } catch {}
+      setTimeout(async () => {
+        try { w.print(); } catch {}
+        setTimeout(async () => {
+          await markPrinted(queueId);
+          try { w.close(); } catch {}
+          loadQueue();
+        }, 700);
+      }, 250);
+    };
+
+    if (w.document && w.document.readyState === 'complete') {
+      afterLoad();
+    } else {
+      w.onload = afterLoad;
+    }
+  }
+
+  // Initial load
+  loadQueue();
+  // Optional polling:
+  // setInterval(loadQueue, 10000);
+</script>
+
 {% endblock %}
