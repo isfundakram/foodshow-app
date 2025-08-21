@@ -13,6 +13,7 @@
       <th>customer_code</th>
       <th>customer_name</th>
       <th>attendee_name</th>
+      <th>Queued</th>  <!-- shows when the walk-in hit the booth queue -->
       <th style="width:120px;">Actions</th>
     </tr>
   </thead>
@@ -23,16 +24,14 @@
 
 <script>
   async function loadQueue() {
-    // Ask server for walk-ins only (supports new API filter you added)
     let data = { items: [] };
     try {
+      // If your backend supports it, this returns walk-ins only
       const res = await fetch('/api/queue?source=walkin', { credentials: 'same-origin' });
       data = await res.json();
-    } catch (e) {
-      // ignore; we'll still handle gracefully
-    }
+    } catch (e) {}
 
-    // Safety net: enforce walk-in filter on client as well
+    // Client-side safety net: keep only walk-ins
     const items = (data.items || []).filter(i => (i.source || '').toLowerCase() === 'walkin');
 
     const body = document.getElementById('qbody');
@@ -40,7 +39,7 @@
 
     if (!items.length) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="4" style="text-align:center; color:#666; padding:16px;">
+      tr.innerHTML = `<td colspan="5" style="text-align:center; color:#666; padding:16px;">
         No walk-in badges in queue.
       </td>`;
       body.appendChild(tr);
@@ -53,9 +52,8 @@
         <td>${escapeHtml(q.customer_code || '')}</td>
         <td>${escapeHtml(q.customer_name || '')}</td>
         <td>${escapeHtml(q.attendee_name || '')}</td>
-        <td>
-          <button class="badge-btn" onclick="printBadge('${q.queue_id}')">Print</button>
-        </td>
+        <td>${formatLocal(q.created_at_iso)}<div style="color:#6b7280; font-size:12px;">${timeAgo(q.created_at_iso)}</div></td>
+        <td><button class="badge-btn" onclick="printBadge('${q.queue_id}')">Print</button></td>
       `;
       body.appendChild(tr);
     });
@@ -65,6 +63,27 @@
     return String(s).replace(/[&<>"']/g, c => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[c]));
+  }
+
+  // Local timestamp like "10:42 AM 8/18/2025"
+  function formatLocal(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dat = d.toLocaleDateString();
+    return `${t} ${dat}`;
+  }
+
+  // "x min ago"
+  function timeAgo(iso) {
+    if (!iso) return '';
+    const now = Date.now();
+    const then = new Date(iso).getTime();
+    const diff = Math.max(0, Math.floor((now - then) / 1000));
+    if (diff < 60) return `${diff}s ago`;
+    const m = Math.floor(diff/60); if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m/60);    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h/24);    return `${d}d ago`;
   }
 
   async function markPrinted(queueId) {
